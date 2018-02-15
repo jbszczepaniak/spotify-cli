@@ -29,6 +29,7 @@ var (
 var clientId = os.Getenv("SPOTIFY_CLIENT_ID")
 var clientSecret = os.Getenv("SPOTIFY_SECRET")
 
+// authenticate authenticate user with Sotify API
 func authenticate() *spotify.Client {
 	auth.SetAuthInfo(clientId, clientSecret)
 	url := auth.AuthURL(state)
@@ -46,6 +47,7 @@ func authenticate() *spotify.Client {
 	return client
 }
 
+// openBrowserWith open browsers with given url
 func openBroswerWith(url string) error {
 	var err error
 	switch runtime.GOOS {
@@ -59,6 +61,8 @@ func openBroswerWith(url string) error {
 	return err
 }
 
+// authCallback is a function to by Spotify upon successful
+// user login at their site
 func authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(state, r)
 	if err != nil {
