@@ -37,6 +37,16 @@ func authenticate() *spotify.Client {
 
 	go http.ListenAndServe(":8888", nil)
 
+	err := openBroswerWith(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client := <-ch
+	return client
+}
+
+func openBroswerWith(url string) error {
 	var err error
 	switch runtime.GOOS {
 	case "darwin":
@@ -44,15 +54,9 @@ func authenticate() *spotify.Client {
 	case "linux":
 		err = exec.Command("xdg-open", url).Start()
 	default:
-		fmt.Errorf("Sorry, not supported")
+		err = fmt.Errorf("Sorry, %v OS is not supported", runtime.GOOS)
 	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client := <-ch
-	return client
+	return err
 }
 
 func authCallback(w http.ResponseWriter, r *http.Request) {
