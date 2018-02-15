@@ -1,4 +1,4 @@
-package spotifycli
+package main
 
 import (
 	"github.com/marcusolsson/tui-go"
@@ -20,6 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, album := range salbums.Albums {
 		albums = append(albums, Album{album.Name, album.Artists[0].Name})
 	}
