@@ -11,8 +11,6 @@ import (
 	"runtime"
 )
 
-var redirectURI = "http://localhost:8888/spotify-cli"
-
 var (
 	auth = spotify.NewAuthenticator(
 		redirectURI,
@@ -22,21 +20,20 @@ var (
 		spotify.ScopeUserModifyPlaybackState,
 		spotify.ScopeUserLibraryRead,
 	)
-	ch    = make(chan *spotify.Client)
-	state = uuid.New().String()
+	ch           = make(chan *spotify.Client)
+	state        = uuid.New().String()
+	redirectURI  = "http://localhost:8888/spotify-cli"
+	clientId     = os.Getenv("SPOTIFY_CLIENT_ID")
+	clientSecret = os.Getenv("SPOTIFY_SECRET")
 )
-
-var clientId = os.Getenv("SPOTIFY_CLIENT_ID")
-var clientSecret = os.Getenv("SPOTIFY_SECRET")
 
 // authenticate authenticate user with Sotify API
 func authenticate() *spotify.Client {
+	http.HandleFunc("/spotify-cli", authCallback)
+	go http.ListenAndServe(":8888", nil)
+
 	auth.SetAuthInfo(clientId, clientSecret)
 	url := auth.AuthURL(state)
-
-	http.HandleFunc("/spotify-cli", authCallback)
-
-	go http.ListenAndServe(":8888", nil)
 
 	err := openBroswerWith(url)
 	if err != nil {
