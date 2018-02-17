@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
 	"log"
+	"strings"
 )
 
 type Album struct {
@@ -20,10 +22,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
-	currentlyPlayingLabel := tui.NewLabel(currentlyPlaying.Item.Name)
+	currentlyPlayingLabel := tui.NewLabel("")
+	updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 
-	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel)
+	availableDevicesTable := createAvailableDevicesTable(client)
+
+	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable)
 	currentlyPlayingBox.SetBorder(true)
 	currentlyPlayingBox.SetTitle("Currently playing")
 
@@ -88,10 +92,35 @@ func main() {
 
 func updateCurrentlyPlayingLabel(client *spotify.Client, label *tui.Label) {
 	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
+	var currentSongName string
 	if err != nil {
-		log.Fatal(err)
+		currentSongName = "None"
+	} else {
+		currentSongName = GetTrackRepr(currentlyPlaying.Item)
 	}
-	label.SetText(currentlyPlaying.Item.Name)
+	label.SetText(currentSongName)
+}
+
+func createAvailableDevicesTable(client *spotify.Client) *tui.Table {
+	avalaibleDevices, err := client.PlayerDevices()
+	if err != nil {
+		return tui.NewTable(0, 0)
+	}
+	table := tui.NewTable(0, 0)
+	table.AppendRow(
+		tui.NewLabel("Name"),
+		tui.NewLabel("Type"),
+	)
+	for i, device := range avalaibleDevices {
+		table.AppendRow(
+			tui.NewLabel(device.Name),
+			tui.NewLabel(device.Type),
+		)
+		if device.Active {
+			table.SetSelected(i)
+		}
+	}
+	return table
 }
 
 func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
@@ -118,4 +147,12 @@ func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 	albumListBox.SetBorder(true)
 	albumListBox.SetTitle("User albums")
 	return albumListBox
+}
+
+func GetTrackRepr(track *spotify.FullTrack) string {
+	var artistsNames []string
+	for _, artist := range track.Artists {
+		artistsNames = append(artistsNames, artist.Name)
+	}
+	return fmt.Sprintf("%v (%v)", track.Name, strings.Join(artistsNames, ", "))
 }
