@@ -15,6 +15,34 @@ type Album struct {
 
 var albums []Album
 
+type DevicesTable struct {
+	table *tui.Table
+	box   *tui.Box
+}
+
+type CurrentlyPlaying struct {
+	box      tui.Box
+	song     string
+	devices  DevicesTable
+	playback Playback
+}
+
+type Playback struct {
+	previous tui.Label
+	next     tui.Label
+	stop     tui.Label
+	play     tui.Label
+}
+
+type AlbumsList struct {
+	table tui.Table
+	box   tui.Box
+}
+
+type Layout struct {
+	currently CurrentlyPlaying
+}
+
 func main() {
 	client := authenticate()
 
@@ -26,11 +54,6 @@ func main() {
 	updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 
 	availableDevicesTable := createAvailableDevicesTable(client)
-
-	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable)
-	currentlyPlayingBox.SetBorder(true)
-	currentlyPlayingBox.SetTitle("Currently playing")
-
 	albumsList := renderAlbumsTable(spotifyAlbums)
 
 	playButton := tui.NewButton("[ ▷ Play]")
@@ -57,8 +80,6 @@ func main() {
 		client.Next()
 	})
 
-	playBackButtons := []tui.Widget{previousButton, playButton, stopButton, nextButton}
-
 	buttons := tui.NewHBox(
 		tui.NewSpacer(),
 		tui.NewPadder(1, 0, previousButton),
@@ -67,16 +88,28 @@ func main() {
 		tui.NewPadder(1, 0, nextButton),
 	)
 
+	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable.box, buttons)
+	currentlyPlayingBox.SetBorder(true)
+	currentlyPlayingBox.SetTitle("Currently playing")
+
+	search := tui.NewEntry()
+	searchBox := tui.NewHBox(search)
+	searchBox.SetTitle("Search")
+	searchBox.SetBorder(true)
+
 	box := tui.NewVBox(
+		searchBox,
 		albumsList,
 		currentlyPlayingBox,
-		tui.NewSpacer(),
-		buttons,
 	)
 	box.SetBorder(true)
 	box.SetTitle("SPOTIFY CLI")
 
-	tui.DefaultFocusChain.Set(playBackButtons...)
+	playBackButtons := []tui.Widget{previousButton, playButton, stopButton, nextButton}
+	focusables := append(playBackButtons, search)
+	focusables = append(focusables, availableDevicesTable.table)
+
+	tui.DefaultFocusChain.Set(focusables...)
 
 	ui, err := tui.New(box)
 	if err != nil {
@@ -101,12 +134,16 @@ func updateCurrentlyPlayingLabel(client *spotify.Client, label *tui.Label) {
 	label.SetText(currentSongName)
 }
 
-func createAvailableDevicesTable(client *spotify.Client) *tui.Table {
+func createAvailableDevicesTable(client *spotify.Client) DevicesTable {
+	table := tui.NewTable(0, 0)
+	tableBox := tui.NewHBox(table)
+	tableBox.SetTitle("Devices")
+	tableBox.SetBorder(true)
+
 	avalaibleDevices, err := client.PlayerDevices()
 	if err != nil {
-		return tui.NewTable(0, 0)
+		return DevicesTable{box: tableBox, table: table}
 	}
-	table := tui.NewTable(0, 0)
 	table.AppendRow(
 		tui.NewLabel("Name"),
 		tui.NewLabel("Type"),
@@ -120,7 +157,20 @@ func createAvailableDevicesTable(client *spotify.Client) *tui.Table {
 			table.SetSelected(i)
 		}
 	}
-	return table
+
+	table.OnItemActivated(func(t *tui.Table) {
+		selctedRow := t.Selected()
+		if selctedRow == 0 {
+			return // Selecting table header
+		}
+		transferPlaybackToDevice(client, &avalaibleDevices[selctedRow-1])
+	})
+
+	return DevicesTable{box: tableBox, table: table}
+}
+
+func transferPlaybackToDevice(client *spotify.Client, pd *spotify.PlayerDevice) {
+	client.TransferPlayback(pd.ID, true)
 }
 
 func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
