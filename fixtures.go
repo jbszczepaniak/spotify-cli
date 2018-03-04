@@ -47,7 +47,7 @@ func (fc FakedClient) Next() error {
 }
 
 func (fc FakedClient) PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error) {
-	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{}}, nil
+	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{SimpleTrack: spotify.SimpleTrack{Name: "Currently Playing Song"}}}, nil
 }
 
 func (fc FakedClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
