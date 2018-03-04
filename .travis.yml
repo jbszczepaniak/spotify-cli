@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - "1.8"
+
+before_install:
+  - go get -v github.com/marcusolsson/tui-go
+  - github.com/zmb3/spotify
+
+script:
+  - go build
