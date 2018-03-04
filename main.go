@@ -29,10 +29,11 @@ type CurrentlyPlaying struct {
 }
 
 type Playback struct {
-	previous tui.Label
-	next     tui.Label
-	stop     tui.Label
-	play     tui.Label
+	previous *tui.Button
+	next     *tui.Button
+	stop     *tui.Button
+	play     *tui.Button
+	box      *tui.Box
 }
 
 type AlbumsList struct {
@@ -81,13 +82,69 @@ func main() {
 
 	availableDevicesTable := createAvailableDevicesTable(client)
 	albumsList := renderAlbumsTable(spotifyAlbums)
+	playbackButtons := createPlaybackButtons(client, currentlyPlayingLabel)
 
+	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable.box, playbackButtons.box)
+	currentlyPlayingBox.SetBorder(true)
+	currentlyPlayingBox.SetTitle("Currently playing")
+
+	search := tui.NewEntry()
+	searchBox := tui.NewHBox(search)
+	searchBox.SetTitle("Search")
+	searchBox.SetBorder(true)
+
+	box := tui.NewVBox(
+		searchBox,
+		albumsList,
+		currentlyPlayingBox,
+	)
+	box.SetTitle("SPOTIFY CLI")
+
+	playBackButtons := []tui.Widget{playbackButtons.next, playbackButtons.stop, playbackButtons.previous, playbackButtons.play}
+	focusables := append(playBackButtons, search)
+	focusables = append(focusables, availableDevicesTable.table)
+
+	tui.DefaultFocusChain.Set(focusables...)
+
+	theme := tui.DefaultTheme
+	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+	theme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+
+	// tui.DefaultTheme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+
+	ui, err := tui.New(box)
+	if err != nil {
+		panic(err)
+	}
+
+	ui.SetKeybinding("Esc", func() {
+		ui.Quit()
+		return
+	})
+
+	if err := ui.Run(); err != nil {
+		panic(err)
+	}
+}
+
+func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {
+	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
+	var currentSongName string
+	if err != nil {
+		currentSongName = "None"
+	} else {
+		currentSongName = GetTrackRepr(currentlyPlaying.Item)
+	}
+	label.SetText(currentSongName)
+}
+
+func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Label) Playback {
 	playButton := tui.NewButton("[ ▷ Play]")
 	stopButton := tui.NewButton("[ ■ Stop]")
 	previousButton := tui.NewButton("[ |◄ Previous ]")
 	nextButton := tui.NewButton("[ ►| Next ]")
 
-	playButton.OnActivated(func(*tui.Button) {
+	playButton.OnActivated(func(btn *tui.Button) {
 		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 		client.Play()
 	})
@@ -115,57 +172,13 @@ func main() {
 	)
 	buttons.SetBorder(true)
 
-	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable.box, buttons)
-	currentlyPlayingBox.SetBorder(true)
-	currentlyPlayingBox.SetTitle("Currently playing")
-
-	search := tui.NewEntry()
-	searchBox := tui.NewHBox(search)
-	searchBox.SetTitle("Search")
-	// searchBox.SetBorder(true)
-
-	box := tui.NewVBox(
-		searchBox,
-		albumsList,
-		currentlyPlayingBox,
-	)
-	// box.SetBorder(true)
-	box.SetTitle("SPOTIFY CLI")
-
-	playBackButtons := []tui.Widget{previousButton, playButton, stopButton, nextButton}
-	focusables := append(playBackButtons, search)
-	focusables = append(focusables, availableDevicesTable.table)
-
-	theme := tui.NewTheme()
-	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
-	theme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
-
-	tui.DefaultFocusChain.Set(focusables...)
-
-	ui, err := tui.New(box)
-	if err != nil {
-		panic(err)
+	return Playback{
+		play:     playButton,
+		stop:     stopButton,
+		previous: previousButton,
+		next:     nextButton,
+		box:      buttons,
 	}
-	ui.SetTheme(theme)
-	ui.SetKeybinding("Esc", func() {
-		ui.Quit()
-		return
-	})
-
-	if err := ui.Run(); err != nil {
-		panic(err)
-	}
-}
-
-func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {
-	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
-	var currentSongName string
-	if err != nil {
-		currentSongName = "None"
-	} else {
-		currentSongName = GetTrackRepr(currentlyPlaying.Item)
-	}
-	label.SetText(currentSongName)
 }
 
 func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
