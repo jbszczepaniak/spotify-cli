@@ -19,6 +19,10 @@ var (
 		spotify.ScopeUserReadPlaybackState,
 		spotify.ScopeUserModifyPlaybackState,
 		spotify.ScopeUserLibraryRead,
+		// Used for Web Playback SDK
+		"streaming",
+		spotify.ScopeUserReadBirthdate,
+		spotify.ScopeUserReadEmail,
 	)
 	ch           = make(chan *spotify.Client)
 	state        = uuid.New().String()
