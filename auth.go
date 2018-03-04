@@ -28,7 +28,7 @@ var (
 )
 
 // authenticate authenticate user with Sotify API
-func authenticate() *spotify.Client {
+func authenticate() SpotifyClient {
 	http.HandleFunc("/spotify-cli", authCallback)
 	go http.ListenAndServe(":8888", nil)
 

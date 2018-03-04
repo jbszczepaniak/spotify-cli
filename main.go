@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
@@ -43,8 +44,33 @@ type Layout struct {
 	currently CurrentlyPlaying
 }
 
+var debugMode bool
+
+func checkMode() {
+	debugModeFlag := flag.Bool("debug", false, "When set to true, app is populated with faked data and is not connecting with Spotify Web API.")
+	flag.Parse()
+	debugMode = *debugModeFlag
+}
+
+type SpotifyClient interface {
+	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
+	Play() error
+	Pause() error
+	Previous() error
+	Next() error
+	PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error)
+	PlayerDevices() ([]spotify.PlayerDevice, error)
+	TransferPlayback(spotify.ID, bool) error
+}
+
 func main() {
-	client := authenticate()
+	checkMode()
+	var client SpotifyClient
+	if debugMode {
+		client = FakedClient{}
+	} else {
+		client = authenticate()
+	}
 
 	spotifyAlbums, err := client.CurrentUsersAlbums()
 	if err != nil {
@@ -87,6 +113,7 @@ func main() {
 		tui.NewPadder(1, 0, stopButton),
 		tui.NewPadder(1, 0, nextButton),
 	)
+	buttons.SetBorder(true)
 
 	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable.box, buttons)
 	currentlyPlayingBox.SetBorder(true)
@@ -95,19 +122,23 @@ func main() {
 	search := tui.NewEntry()
 	searchBox := tui.NewHBox(search)
 	searchBox.SetTitle("Search")
-	searchBox.SetBorder(true)
+	// searchBox.SetBorder(true)
 
 	box := tui.NewVBox(
 		searchBox,
 		albumsList,
 		currentlyPlayingBox,
 	)
-	box.SetBorder(true)
+	// box.SetBorder(true)
 	box.SetTitle("SPOTIFY CLI")
 
 	playBackButtons := []tui.Widget{previousButton, playButton, stopButton, nextButton}
 	focusables := append(playBackButtons, search)
 	focusables = append(focusables, availableDevicesTable.table)
+
+	theme := tui.NewTheme()
+	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+	theme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
 
 	tui.DefaultFocusChain.Set(focusables...)
 
@@ -115,15 +146,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	ui.SetKeybinding("Esc", func() { ui.Quit() })
+	ui.SetTheme(theme)
+	ui.SetKeybinding("Esc", func() {
+		ui.Quit()
+		return
+	})
 
 	if err := ui.Run(); err != nil {
 		panic(err)
 	}
 }
 
-func updateCurrentlyPlayingLabel(client *spotify.Client, label *tui.Label) {
+func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {
 	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
 	var currentSongName string
 	if err != nil {
@@ -134,7 +168,7 @@ func updateCurrentlyPlayingLabel(client *spotify.Client, label *tui.Label) {
 	label.SetText(currentSongName)
 }
 
-func createAvailableDevicesTable(client *spotify.Client) DevicesTable {
+func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
 	table := tui.NewTable(0, 0)
 	tableBox := tui.NewHBox(table)
 	tableBox.SetTitle("Devices")
@@ -169,7 +203,7 @@ func createAvailableDevicesTable(client *spotify.Client) DevicesTable {
 	return DevicesTable{box: tableBox, table: table}
 }
 
-func transferPlaybackToDevice(client *spotify.Client, pd *spotify.PlayerDevice) {
+func transferPlaybackToDevice(client SpotifyClient, pd *spotify.PlayerDevice) {
 	client.TransferPlayback(pd.ID, true)
 }
 
