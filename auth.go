@@ -78,6 +78,7 @@ func authCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := auth.NewClient(token)
+
 	ch <- &client
 
 	user, err := client.CurrentUser()
@@ -98,13 +99,5 @@ func insertTokenToTemplate(token string, template TemplateInterface) error {
 		return err
 	}
 	defer f.Close()
-
 	return template.Execute(f, tokenToInsert{token})
-
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }

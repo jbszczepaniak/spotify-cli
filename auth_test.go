@@ -3,6 +3,8 @@ package main
 import "testing"
 import "os"
 import "io"
+import "net/http/httptest"
+import "github.com/zmb3/spotify"
 
 type TemplateMock struct {
 	ExecuteCount int
@@ -25,8 +27,21 @@ func TestInsertTokenToTemplate(t *testing.T) {
 	}
 
 	if mock.ExecuteData.(tokenToInsert).Token != "test token" {
-		t.Error("template.Execute should be called with test token", mock.ExecuteData)
+		t.Error("template.Execute should be called with test token. It was called with: ", mock.ExecuteData)
 	}
 
 	os.Remove("index.html")
+}
+
+func TestAuthCallBack(t *testing.T) {
+	ch = make(chan *spotify.Client)
+
+	go func() {
+		client := <-ch
+		if token, _ := client.Token(); token.AccessToken == "123" {
+			t.Error("asd")
+		}
+
+	}()
+	authCallback(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
 }
