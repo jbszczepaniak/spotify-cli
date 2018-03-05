@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/zmb3/spotify"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -48,7 +49,8 @@ func authenticate() SpotifyClient {
 	client := <-ch
 
 	token, _ := client.Token()
-	insertTokenToTemplate(token.AccessToken)
+	t, _ := template.ParseFiles("index_tmpl.html")
+	insertTokenToTemplate(token.AccessToken, t)
 
 	return client
 }
@@ -82,9 +84,11 @@ func authCallback(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>Logged into spotify cli as:</h1>\n<p>%v</p>", user.DisplayName)
 }
 
-func insertTokenToTemplate(token string) {
-	t := template.New("web player")
-	t, _ = template.ParseFiles("index_tmpl.html")
+type TemplateInterface interface {
+	Execute(io.Writer, interface{}) error
+}
+
+func insertTokenToTemplate(token string, template TemplateInterface) error {
 	tokenToInsert := struct {
 		Token string
 	}{
@@ -94,7 +98,7 @@ func insertTokenToTemplate(token string) {
 	check(err)
 	defer f.Close()
 
-	t.Execute(f, tokenToInsert)
+	return template.Execute(f, tokenToInsert)
 
 }
 
