@@ -88,17 +88,18 @@ type TemplateInterface interface {
 	Execute(io.Writer, interface{}) error
 }
 
+type tokenToInsert struct {
+	Token string
+}
+
 func insertTokenToTemplate(token string, template TemplateInterface) error {
-	tokenToInsert := struct {
-		Token string
-	}{
-		Token: token,
-	}
 	f, err := os.Create("index.html")
-	check(err)
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
-	return template.Execute(f, tokenToInsert)
+	return template.Execute(f, tokenToInsert{token})
 
 }
 
