@@ -1,6 +1,7 @@
 package main
 
 import "github.com/zmb3/spotify"
+import "golang.org/x/oauth2"
 
 type FakedClient struct {
 }
@@ -61,4 +62,12 @@ func (fc FakedClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
 
 func (fc FakedClient) TransferPlayback(id spotify.ID, play bool) error {
 	return nil
+}
+
+func (fc FakedClient) CurrentUser() (*spotify.PrivateUser, error) {
+	return &spotify.PrivateUser{}, nil
+}
+
+func (fc FakedClient) Token() (*oauth2.Token, error) {
+	return &oauth2.Token{}, nil
 }

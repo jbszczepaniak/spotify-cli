@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2"
 	"log"
 	"strings"
 )
@@ -62,6 +63,8 @@ type SpotifyClient interface {
 	PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error)
 	PlayerDevices() ([]spotify.PlayerDevice, error)
 	TransferPlayback(spotify.ID, bool) error
+	CurrentUser() (*spotify.PrivateUser, error)
+	Token() (*oauth2.Token, error)
 }
 
 func main() {
