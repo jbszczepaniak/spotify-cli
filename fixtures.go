@@ -1,7 +1,9 @@
 package main
 
-import "github.com/zmb3/spotify"
-import "golang.org/x/oauth2"
+import (
+	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2"
+)
 
 type FakedClient struct {
 }

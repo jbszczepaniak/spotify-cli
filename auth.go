@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	auth         = getSpotifyAuthenticator()
 	ch           = make(chan *spotify.Client)
 	state        = uuid.New().String()
 	redirectURI  = "http://localhost:8888/spotify-cli"
@@ -44,8 +45,6 @@ func getSpotifyAuthenticator() SpotifyAuthenticatorInterface {
 	auth.SetAuthInfo(clientId, clientSecret)
 	return auth
 }
-
-var auth = getSpotifyAuthenticator()
 
 // authenticate authenticate user with Sotify API
 func authenticate() SpotifyClient {
@@ -99,6 +98,7 @@ func authCallback(w http.ResponseWriter, r *http.Request) {
 
 var getCurrentUser = getCurrentUserWrapper
 
+// getCurrentUserWrapper wraps CurrentUser method in order to be able to test it
 func getCurrentUserWrapper(client spotify.Client) (*spotify.PrivateUser, error) {
 	return client.CurrentUser()
 }
