@@ -22,8 +22,12 @@ func (tm *TemplateMock) Execute(wr io.Writer, data interface{}) error {
 	return nil
 }
 
-func TestInsertTokenToTemplate(t *testing.T) {
+func TestInsertTokenToTemplateShouldExecuteOnTemplate(t *testing.T) {
 	mock := TemplateMock{}
+
+	osCreate = func(string) (*os.File, error) {
+		return &os.File{}, nil
+	}
 
 	insertTokenToTemplate("test token", &mock)
 
@@ -34,8 +38,17 @@ func TestInsertTokenToTemplate(t *testing.T) {
 	if mock.ExecuteData.(tokenToInsert).Token != "test token" {
 		t.Error("template.Execute should be called with test token. It was called with: ", mock.ExecuteData)
 	}
+}
 
-	os.Remove("index.html")
+func TestInsertTokenbToTemplateReturnsErrorWhenCouldNotCreateFile(t *testing.T) {
+	osCreate = func(string) (*os.File, error) {
+		return nil, fmt.Errorf("Could not create file")
+	}
+	err := insertTokenToTemplate("test token", &TemplateMock{})
+
+	if err == nil {
+		t.Error("Should return error")
+	}
 }
 
 type AuthenticatorMock struct {

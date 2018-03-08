@@ -111,8 +111,10 @@ type tokenToInsert struct {
 	Token string
 }
 
+var osCreate = os.Create
+
 func insertTokenToTemplate(token string, template TemplateInterface) error {
-	f, err := os.Create("index.html")
+	f, err := osCreate("index.html")
 	if err != nil {
 		return err
 	}
