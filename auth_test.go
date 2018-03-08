@@ -42,7 +42,7 @@ func TestInsertTokenToTemplateShouldExecuteOnTemplate(t *testing.T) {
 
 func TestInsertTokenbToTemplateReturnsErrorWhenCouldNotCreateFile(t *testing.T) {
 	osCreate = func(string) (*os.File, error) {
-		return nil, fmt.Errorf("Could not create file")
+		return nil, fmt.Errorf("could not create file")
 	}
 	err := insertTokenToTemplate("test token", &TemplateMock{})
 
@@ -54,10 +54,15 @@ func TestInsertTokenbToTemplateReturnsErrorWhenCouldNotCreateFile(t *testing.T) 
 type AuthenticatorMock struct {
 }
 
-func (am AuthenticatorMock) Token(state string, r *http.Request) (*oauth2.Token, error) {
-	return &oauth2.Token{}, nil
-}
+var returnErrToken bool
 
+func (am AuthenticatorMock) Token(state string, r *http.Request) (*oauth2.Token, error) {
+	if returnErrToken {
+		return nil, fmt.Errorf("could not return token")
+	}
+	return &oauth2.Token{}, nil
+
+}
 func (am AuthenticatorMock) NewClient(token *oauth2.Token) spotify.Client {
 	return spotify.Client{}
 }
@@ -83,5 +88,15 @@ func TestAuthCallBackReturnsHTMLWithNameFromSpotifyUser(t *testing.T) {
 
 	if r.Body.String() != expectedBody {
 		t.Error("server returned wrong HTML, expected: ", expectedBody)
+	}
+}
+
+func TestAuthCallBackReturnsErrorIfTokenNotCreated(t *testing.T) {
+	returnErrToken = true
+	auth = &AuthenticatorMock{}
+	r := httptest.NewRecorder()
+	authCallback(r, httptest.NewRequest("GET", "/", nil))
+	if statusCode := r.Result().StatusCode; statusCode != http.StatusNotFound {
+		t.Errorf("Should return status code %d, returned %d", http.StatusNotFound, statusCode)
 	}
 }
