@@ -73,3 +73,7 @@ func (fc FakedClient) CurrentUser() (*spotify.PrivateUser, error) {
 func (fc FakedClient) Token() (*oauth2.Token, error) {
 	return &oauth2.Token{}, nil
 }
+
+func (fc FakedClient) Search(query string, t spotify.SearchType) (*spotify.SearchResult, error) {
+	return nil, nil
+}

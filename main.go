@@ -66,6 +66,7 @@ type SpotifyClient interface {
 	TransferPlayback(spotify.ID, bool) error
 	CurrentUser() (*spotify.PrivateUser, error)
 	Token() (*oauth2.Token, error)
+	Search(query string, t spotify.SearchType) (*spotify.SearchResult, error)
 }
 
 func main() {
@@ -86,6 +87,9 @@ func main() {
 
 	availableDevicesTable := createAvailableDevicesTable(client)
 	albumsList := renderAlbumsTable(spotifyAlbums)
+	albumsList.SetSizePolicy(tui.Minimum, tui.Preferred)
+	sidebar := tui.NewHBox(tui.NewVBox(albumsList, tui.NewSpacer()), tui.NewSpacer())
+
 	playbackButtons := createPlaybackButtons(client, currentlyPlayingLabel)
 
 	currentlyPlayingBox := tui.NewHBox(currentlyPlayingLabel, availableDevicesTable.box, playbackButtons.box)
@@ -93,18 +97,39 @@ func main() {
 	currentlyPlayingBox.SetTitle("Currently playing")
 
 	search := tui.NewEntry()
-	searchBox := tui.NewHBox(search)
+	search.OnSubmit(func(entry *tui.Entry) {
+		result, _ := client.Search(entry.Text(), spotify.SearchTypeAlbum)
+		for _, i := range result.Albums.Albums {
+			log.Println(i.Name)
+		}
+	})
+	search.SetSizePolicy(tui.Preferred, tui.Minimum)
+	searchBox := tui.NewHBox(search, tui.NewSpacer())
 	searchBox.SetTitle("Search")
 	searchBox.SetBorder(true)
 
-	box := tui.NewVBox(
+	searchedSongs := tui.NewVBox(tui.NewSpacer())
+	searchedSongs.SetTitle("Songs")
+	searchedSongs.SetBorder(true)
+	searchedAlbums := tui.NewVBox(tui.NewSpacer())
+	searchedAlbums.SetTitle("Albums")
+	searchedAlbums.SetBorder(true)
+
+	searchResults := tui.NewVBox(searchedSongs, searchedAlbums)
+	searchResults.SetTitle("Search Results")
+
+	mainFrame := tui.NewVBox(
 		searchBox,
-		albumsList,
+		searchResults,
+		tui.NewSpacer(),
 		currentlyPlayingBox,
 	)
+	mainFrame.SetSizePolicy(tui.Expanding, tui.Expanding)
+
+	box := tui.NewHBox(sidebar, mainFrame)
 	box.SetTitle("SPOTIFY CLI")
 
-	playBackButtons := []tui.Widget{playbackButtons.next, playbackButtons.stop, playbackButtons.previous, playbackButtons.play}
+	playBackButtons := []tui.Widget{playbackButtons.previous, playbackButtons.play, playbackButtons.stop, playbackButtons.next}
 	focusables := append(playBackButtons, search)
 	focusables = append(focusables, availableDevicesTable.table)
 
@@ -235,15 +260,25 @@ func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 	albumsList.SetColumnStretch(2, 4)
 
 	albumsList.AppendRow(
-		tui.NewLabel("Artist"),
 		tui.NewLabel("Title"),
+		tui.NewLabel("Artist"),
 	)
-
+	colLength := 20
 	for _, album := range albums {
-		albumsList.AppendRow(
-			tui.NewLabel(album.artist),
-			tui.NewLabel(album.title),
-		)
+		var artistRow, albumRow *tui.Label
+		if len(album.artist) > colLength {
+			artistRow = tui.NewLabel(album.artist[:colLength] + "...")
+		} else {
+			artistRow = tui.NewLabel(album.artist)
+		}
+
+		if len(album.title) > colLength {
+			albumRow = tui.NewLabel(album.title[:colLength] + "...")
+		} else {
+			albumRow = tui.NewLabel(album.title)
+		}
+
+		albumsList.AppendRow(artistRow, albumRow)
 	}
 	albumListBox := tui.NewVBox(albumsList)
 	albumListBox.SetBorder(true)
