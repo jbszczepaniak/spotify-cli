@@ -4,15 +4,15 @@
   <title>Spotify Web Playback SDK Quick Start Tutorial</title>
 </head>
 <body>
-  <h1>Spotify Web Playback SDK Quick Start Tutorial</h1>
-  <h2>Open your console log: <code>View > Developer > JavaScript Console</code></h2>
+  <h1>Spotify Player</h1>
+  <h2>Go to the terminal and please do not close this tab.</h2>
 
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <script type="text/javascript" charset="utf-8" async defer>
     window.onSpotifyWebPlaybackSDKReady = () => {
       const token = {{.Token}};
       const player = new Spotify.Player({
-        name: 'Web Playback SDK Quick Start Player',
+        name: 'Browser playback',
         getOAuthToken: cb => { cb(token); }
       });
 
@@ -27,12 +27,21 @@
 
       // Ready
       player.addListener('ready', ({ device_id }) => {
+        callBackend('/player-is-up?deviceId='+device_id);
         console.log('Ready with Device ID', device_id);
       });
 
       // Connect to the player!
       player.connect();
     };    
+  function callBackend(url) {
+    fetch(url).then(function (response) {
+      return response.json();
+    })
+    .then(function (body) {
+      //doSomething with body;
+    });
+  }
   </script>
 </body>
 </html>

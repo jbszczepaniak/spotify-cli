@@ -7,27 +7,27 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"strings"
 	"testing"
 )
 
 type TemplateMock struct {
 	ExecuteCount int
 	ExecuteData  interface{}
+	ExecuteError bool
 }
 
 func (tm *TemplateMock) Execute(wr io.Writer, data interface{}) error {
 	tm.ExecuteCount++
 	tm.ExecuteData = data
+	if tm.ExecuteError {
+		return fmt.Errorf("")
+	}
 	return nil
 }
 
 func TestInsertTokenToTemplateShouldExecuteOnTemplate(t *testing.T) {
 	mock := TemplateMock{}
-
-	osCreate = func(string) (*os.File, error) {
-		return &os.File{}, nil
-	}
 
 	insertTokenToTemplate("test token", &mock)
 
@@ -40,11 +40,11 @@ func TestInsertTokenToTemplateShouldExecuteOnTemplate(t *testing.T) {
 	}
 }
 
-func TestInsertTokenbToTemplateReturnsErrorWhenCouldNotCreateFile(t *testing.T) {
-	osCreate = func(string) (*os.File, error) {
-		return nil, fmt.Errorf("could not create file")
-	}
-	err := insertTokenToTemplate("test token", &TemplateMock{})
+func TestInsertTokenbToTemplateReturnsErrorWhenTemplateExecuteReturnsError(t *testing.T) {
+	mock := TemplateMock{}
+	mock.ExecuteError = true
+
+	_, err := insertTokenToTemplate("test token", &mock)
 
 	if err == nil {
 		t.Error("Should return error")
@@ -70,12 +70,8 @@ func (am AuthenticatorMock) AuthURL(state string) string {
 	return ""
 }
 
-func TestAuthCallBackReturnsHTMLWithNameFromSpotifyUser(t *testing.T) {
+func TestAuthCallBackReturnsPageWithWebPlaybackSDK(t *testing.T) {
 	auth = &AuthenticatorMock{} // Especially mock out Token method which must return valid token.
-	displayName := "George"
-	getCurrentUser = func(spotify.Client) (*spotify.PrivateUser, error) {
-		return &spotify.PrivateUser{User: spotify.User{DisplayName: displayName}}, nil
-	}
 
 	ch = make(chan *spotify.Client)
 	go func() {
@@ -84,10 +80,11 @@ func TestAuthCallBackReturnsHTMLWithNameFromSpotifyUser(t *testing.T) {
 
 	r := httptest.NewRecorder()
 	authCallback(r, httptest.NewRequest("GET", "/", nil))
-	expectedBody := fmt.Sprintf("<h1>Logged into spotify cli as:</h1>\n<p>%v</p>", displayName)
+	spotifyPlaybackScript := "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>"
 
-	if r.Body.String() != expectedBody {
-		t.Error("server returned wrong HTML, expected: ", expectedBody)
+	if actualBody := r.Body.String(); strings.Contains(actualBody, spotifyPlaybackScript) != true {
+		t.Log(actualBody)
+		t.Error("Body does not contain spotify playback script")
 	}
 }
 

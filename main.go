@@ -8,6 +8,7 @@ import (
 	"golang.org/x/oauth2"
 	"log"
 	"strings"
+	"time"
 )
 
 type Album struct {
@@ -185,6 +186,7 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 }
 
 func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
+	time.Sleep(time.Second * 2) // Workaround, will be done smarter
 	table := tui.NewTable(0, 0)
 	tableBox := tui.NewHBox(table)
 	tableBox.SetTitle("Devices")
