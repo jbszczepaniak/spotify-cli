@@ -49,6 +49,10 @@ func (fc FakedClient) Next() error {
 	return nil
 }
 
+func (fc FakedClient) PlayOpt(opt *spotify.PlayOptions) error {
+	return nil
+}
+
 func (fc FakedClient) PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error) {
 	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{SimpleTrack: spotify.SimpleTrack{Name: "Currently Playing Song"}}}, nil
 }

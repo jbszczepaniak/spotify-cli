@@ -58,6 +58,7 @@ func checkMode() {
 type SpotifyClient interface {
 	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
 	Play() error
+	PlayOpt(opt *spotify.PlayOptions) error
 	Pause() error
 	Previous() error
 	Next() error
@@ -102,17 +103,26 @@ func main() {
 	searchedSongs.SetBorder(true)
 
 	searchedAlbumsTable := tui.NewTable(0, 0)
+	searchedAlbumsSlice := make([]spotify.SimpleAlbum, 0)
 	searchedAlbums := tui.NewVBox(searchedAlbumsTable, tui.NewSpacer())
 	searchedAlbums.SetTitle("Albums")
 	searchedAlbums.SetBorder(true)
+
+	searchedAlbumsTable.OnItemActivated(func(t *tui.Table) {
+		selectedRow := t.Selected()
+		albumURI := &searchedAlbumsSlice[selectedRow].URI
+		client.PlayOpt(&spotify.PlayOptions{PlaybackContext: albumURI})
+	})
 
 	search := tui.NewEntry()
 	search.OnSubmit(func(entry *tui.Entry) {
 		result, _ := client.Search(entry.Text(), spotify.SearchTypeAlbum|spotify.SearchTypeTrack)
 		searchedAlbumsTable.RemoveRows()
+		searchedAlbumsSlice = searchedAlbumsSlice[:0]
 		searchedSongsTable.RemoveRows()
 		for _, i := range result.Albums.Albums {
 			searchedAlbumsTable.AppendRow(tui.NewLabel(i.Name))
+			searchedAlbumsSlice = append(searchedAlbumsSlice, i)
 		}
 		for _, i := range result.Tracks.Tracks {
 			searchedSongsTable.AppendRow(tui.NewLabel(i.Name))
