@@ -96,24 +96,33 @@ func main() {
 	currentlyPlayingBox.SetBorder(true)
 	currentlyPlayingBox.SetTitle("Currently playing")
 
+	searchedSongsTable := tui.NewTable(0, 0)
+	searchedSongs := tui.NewVBox(searchedSongsTable, tui.NewSpacer())
+	searchedSongs.SetTitle("Songs")
+	searchedSongs.SetBorder(true)
+
+	searchedAlbumsTable := tui.NewTable(0, 0)
+	searchedAlbums := tui.NewVBox(searchedAlbumsTable, tui.NewSpacer())
+	searchedAlbums.SetTitle("Albums")
+	searchedAlbums.SetBorder(true)
+
 	search := tui.NewEntry()
 	search.OnSubmit(func(entry *tui.Entry) {
-		result, _ := client.Search(entry.Text(), spotify.SearchTypeAlbum)
+		result, _ := client.Search(entry.Text(), spotify.SearchTypeAlbum|spotify.SearchTypeTrack)
+		searchedAlbumsTable.RemoveRows()
+		searchedSongsTable.RemoveRows()
 		for _, i := range result.Albums.Albums {
-			log.Println(i.Name)
+			searchedAlbumsTable.AppendRow(tui.NewLabel(i.Name))
 		}
+		for _, i := range result.Tracks.Tracks {
+			searchedSongsTable.AppendRow(tui.NewLabel(i.Name))
+		}
+
 	})
 	search.SetSizePolicy(tui.Preferred, tui.Minimum)
 	searchBox := tui.NewHBox(search, tui.NewSpacer())
 	searchBox.SetTitle("Search")
 	searchBox.SetBorder(true)
-
-	searchedSongs := tui.NewVBox(tui.NewSpacer())
-	searchedSongs.SetTitle("Songs")
-	searchedSongs.SetBorder(true)
-	searchedAlbums := tui.NewVBox(tui.NewSpacer())
-	searchedAlbums.SetTitle("Albums")
-	searchedAlbums.SetBorder(true)
 
 	searchResults := tui.NewVBox(searchedSongs, searchedAlbums)
 	searchResults.SetTitle("Search Results")
@@ -132,6 +141,8 @@ func main() {
 	playBackButtons := []tui.Widget{playbackButtons.previous, playbackButtons.play, playbackButtons.stop, playbackButtons.next}
 	focusables := append(playBackButtons, search)
 	focusables = append(focusables, availableDevicesTable.table)
+	focusables = append(focusables, searchedSongsTable)
+	focusables = append(focusables, searchedAlbumsTable)
 
 	tui.DefaultFocusChain.Set(focusables...)
 
