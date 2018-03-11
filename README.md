@@ -1,6 +1,7 @@
 # Spotify CLI
 [![Build Status](https://travis-ci.org/jedruniu/spotify-cli.svg?branch=master)](https://travis-ci.org/jedruniu/spotify-cli)
 [![codecov](https://codecov.io/gh/jedruniu/spotify-cli/branch/master/graph/badge.svg)](https://codecov.io/gh/jedruniu/spotify-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jedruniu/spotify-cli)](https://goreportcard.com/report/github.com/jedruniu/spotify-cli)
 
 Spotify Client which runs in the terminal.
 
