@@ -17,8 +17,6 @@ import (
 
 var (
 	auth          = getSpotifyAuthenticator()
-	ch            = make(chan *spotify.Client)
-	playerChanged = make(chan string)
 	state         = uuid.New().String()
 	redirectURI   = "http://localhost:8888/spotify-cli"
 	clientId      = os.Getenv("SPOTIFY_CLIENT_ID")
@@ -48,54 +46,69 @@ func getSpotifyAuthenticator() SpotifyAuthenticatorInterface {
 	return auth
 }
 
+type Server struct {
+	client chan *spotify.Client
+	playerChanged chan string
+}
+
+
 // authenticate authenticate user with Sotify API
 func authenticate() SpotifyClient {
-	http.HandleFunc("/spotify-cli", authCallback)
-	http.HandleFunc("/player-is-up", stateChangedCallback)
+	s := Server{
+		client: make(chan *spotify.Client),
+		playerChanged: make(chan string),
+	}
+
+	http.HandleFunc("/spotify-cli", s.authCallback)
+	http.HandleFunc("/player-is-up", s.stateChangedCallback)
 	go http.ListenAndServe(":8888", nil)
 
 	url := auth.AuthURL(state)
 
-	err := openBroswerWith(url)
+	_, err := openBroswerWith(url)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	client := <-ch
-	return client
+	return <-s.client
 }
 
-func stateChangedCallback(w http.ResponseWriter, r *http.Request) {
+func (s *Server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	playerChanged <- r.FormValue("deviceId")
+	s.playerChanged <- r.FormValue("deviceId")
 }
 
-// openBrowserWith open browsers with given url
-func openBroswerWith(url string) error {
-	var err error
+// openBrowserWith open browsers with given url and returns process id of opened browser
+func openBroswerWith(url string) (int, error) {
+	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		err = exec.Command("open", "-a", "/Applications/Google Chrome.app", url).Start()
+		cmd = exec.Command("open", "-a", "/Applications/Google Chrome.app", url)
 	case "linux":
-		err = exec.Command("xdg-open", url).Start()
+		cmd = exec.Command("xdg-open", url)
 	default:
-		err = fmt.Errorf("Sorry, %v OS is not supported", runtime.GOOS)
+		return 0, fmt.Errorf("Sorry, %v OS is not supported", runtime.GOOS)
 	}
-	return err
+
+	err := cmd.Start()
+	if err != nil {
+		return 0, err
+	}
+	process := cmd.Process
+	return process.Pid, nil
 }
 
 // authCallback is a function to by Spotify upon successful
 // user login at their site
-func authCallback(w http.ResponseWriter, r *http.Request) {
+func (s *Server) authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(state, r)
-
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusNotFound)
 		return
 	}
 
 	client := auth.NewClient(token)
-	ch <- &client
+	s.client <- &client
 
 	t, _ := template.ParseFiles("index_tmpl.html")
 

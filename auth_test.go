@@ -7,8 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+	"errors"
+	"strings"
 )
 
 type TemplateMock struct {
@@ -51,49 +52,60 @@ func TestInsertTokenbToTemplateReturnsErrorWhenTemplateExecuteReturnsError(t *te
 	}
 }
 
-type AuthenticatorMock struct {
+type FakeAuthenticator struct {
+	Err error
 }
 
-var returnErrToken bool
-
-func (am AuthenticatorMock) Token(state string, r *http.Request) (*oauth2.Token, error) {
-	if returnErrToken {
-		return nil, fmt.Errorf("could not return token")
+func (am FakeAuthenticator) Token(state string, r *http.Request) (*oauth2.Token, error) {
+	if am.Err != nil {
+		return nil, errors.New("")
 	}
 	return &oauth2.Token{}, nil
-
 }
-func (am AuthenticatorMock) NewClient(token *oauth2.Token) spotify.Client {
+
+func (am FakeAuthenticator) NewClient(token *oauth2.Token) spotify.Client {
 	return spotify.Client{}
 }
-func (am AuthenticatorMock) AuthURL(state string) string {
+
+func (am FakeAuthenticator) AuthURL(state string) string {
 	return ""
 }
 
-func TestAuthCallBackReturnsPageWithWebPlaybackSDK(t *testing.T) {
-	auth = &AuthenticatorMock{} // Especially mock out Token method which must return valid token.
-
-	ch = make(chan *spotify.Client)
-	go func() {
-		<-ch
-	}()
-
-	r := httptest.NewRecorder()
-	authCallback(r, httptest.NewRequest("GET", "/", nil))
-	spotifyPlaybackScript := "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>"
-
-	if actualBody := r.Body.String(); strings.Contains(actualBody, spotifyPlaybackScript) != true {
-		t.Log(actualBody)
-		t.Error("Body does not contain spotify playback script")
+func TestAuthCallback(t *testing.T) {
+	cases := []struct {
+		f FakeAuthenticator
+		expectedStatusCode int
+		expectedJSsnippet string
+	}{
+		{
+			f: FakeAuthenticator{
+				Err: nil,
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedJSsnippet: "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>",
+		},
+		{
+			f: FakeAuthenticator{
+				Err: errors.New(""),
+			},
+			expectedStatusCode: http.StatusNotFound,
+			expectedJSsnippet: "",
+		},
 	}
-}
 
-func TestAuthCallBackReturnsErrorIfTokenNotCreated(t *testing.T) {
-	returnErrToken = true
-	auth = &AuthenticatorMock{}
-	r := httptest.NewRecorder()
-	authCallback(r, httptest.NewRequest("GET", "/", nil))
-	if statusCode := r.Result().StatusCode; statusCode != http.StatusNotFound {
-		t.Errorf("Should return status code %d, returned %d", http.StatusNotFound, statusCode)
+	for _, c := range cases {
+		auth = c.f
+		r := httptest.NewRecorder()
+		server := Server{client: make(chan *spotify.Client)}
+		go func() {
+			<-server.client
+		}()
+		server.authCallback(r, httptest.NewRequest("GET", "/", nil))
+		if c.expectedStatusCode != r.Result().StatusCode {
+			t.Errorf("Expected status to be %d but it was %d", c.expectedStatusCode, r.Result().StatusCode)
+		} 
+		if actualBody := r.Body.String(); strings.Contains(actualBody, c.expectedJSsnippet) != true {
+			t.Errorf("Expected body to contain %s", c.expectedJSsnippet)
+		}
 	}
 }
