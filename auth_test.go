@@ -1,15 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"errors"
 	"strings"
+	"testing"
 )
 
 type TemplateMock struct {
@@ -73,23 +73,23 @@ func (am FakeAuthenticator) AuthURL(state string) string {
 
 func TestAuthCallback(t *testing.T) {
 	cases := []struct {
-		f FakeAuthenticator
+		f                  FakeAuthenticator
 		expectedStatusCode int
-		expectedJSsnippet string
+		expectedJSsnippet  string
 	}{
 		{
 			f: FakeAuthenticator{
 				Err: nil,
 			},
 			expectedStatusCode: http.StatusOK,
-			expectedJSsnippet: "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>",
+			expectedJSsnippet:  "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>",
 		},
 		{
 			f: FakeAuthenticator{
 				Err: errors.New(""),
 			},
 			expectedStatusCode: http.StatusNotFound,
-			expectedJSsnippet: "",
+			expectedJSsnippet:  "",
 		},
 	}
 
@@ -103,7 +103,7 @@ func TestAuthCallback(t *testing.T) {
 		server.authCallback(r, httptest.NewRequest("GET", "/", nil))
 		if c.expectedStatusCode != r.Result().StatusCode {
 			t.Errorf("Expected status to be %d but it was %d", c.expectedStatusCode, r.Result().StatusCode)
-		} 
+		}
 		if actualBody := r.Body.String(); strings.Contains(actualBody, c.expectedJSsnippet) != true {
 			t.Errorf("Expected body to contain %s", c.expectedJSsnippet)
 		}
