@@ -16,20 +16,20 @@ import (
 )
 
 var (
-	auth          = getSpotifyAuthenticator()
-	state         = uuid.New().String()
-	redirectURI   = "http://localhost:8888/spotify-cli"
-	clientId      = os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret  = os.Getenv("SPOTIFY_SECRET")
+	auth         = getSpotifyAuthenticator()
+	state        = uuid.New().String()
+	redirectURI  = "http://localhost:8888/spotify-cli"
+	clientID     = os.Getenv("SPOTIFY_CLIENT_ID")
+	clientSecret = os.Getenv("SPOTIFY_SECRET")
 )
 
-type SpotifyAuthenticatorInterface interface {
+type spotifyAuthenticatorInterface interface {
 	AuthURL(string) string
 	Token(string, *http.Request) (*oauth2.Token, error)
 	NewClient(*oauth2.Token) spotify.Client
 }
 
-func getSpotifyAuthenticator() SpotifyAuthenticatorInterface {
+func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 	auth := spotify.NewAuthenticator(
 		redirectURI,
 		spotify.ScopeUserReadPrivate,
@@ -42,20 +42,19 @@ func getSpotifyAuthenticator() SpotifyAuthenticatorInterface {
 		spotify.ScopeUserReadBirthdate,
 		spotify.ScopeUserReadEmail,
 	)
-	auth.SetAuthInfo(clientId, clientSecret)
+	auth.SetAuthInfo(clientID, clientSecret)
 	return auth
 }
 
-type Server struct {
-	client chan *spotify.Client
+type server struct {
+	client        chan *spotify.Client
 	playerChanged chan string
 }
 
-
 // authenticate authenticate user with Sotify API
 func authenticate() SpotifyClient {
-	s := Server{
-		client: make(chan *spotify.Client),
+	s := server{
+		client:        make(chan *spotify.Client),
 		playerChanged: make(chan string),
 	}
 
@@ -73,7 +72,7 @@ func authenticate() SpotifyClient {
 	return <-s.client
 }
 
-func (s *Server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
+func (s *server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	s.playerChanged <- r.FormValue("deviceId")
 }
@@ -100,7 +99,7 @@ func openBroswerWith(url string) (int, error) {
 
 // authCallback is a function to by Spotify upon successful
 // user login at their site
-func (s *Server) authCallback(w http.ResponseWriter, r *http.Request) {
+func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusNotFound)
@@ -122,7 +121,7 @@ func (s *Server) authCallback(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, playbackPage)
 }
 
-type TemplateInterface interface {
+type templateInterface interface {
 	Execute(io.Writer, interface{}) error
 }
 
@@ -132,7 +131,7 @@ type tokenToInsert struct {
 
 var osCreate = os.Create
 
-func insertTokenToTemplate(token string, template TemplateInterface) (string, error) {
+func insertTokenToTemplate(token string, template templateInterface) (string, error) {
 	buf := new(bytes.Buffer)
 	err := template.Execute(buf, tokenToInsert{token})
 	if err != nil {

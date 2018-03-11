@@ -11,26 +11,26 @@ import (
 	"time"
 )
 
-type Album struct {
+type albumDescription struct {
 	artist string
 	title  string
 }
 
-var albums []Album
+var albumsDescriptions []albumDescription
 
-type DevicesTable struct {
+type devicesTable struct {
 	table *tui.Table
 	box   *tui.Box
 }
 
-type CurrentlyPlaying struct {
+type currentlyPlaying struct {
 	box      tui.Box
 	song     string
-	devices  DevicesTable
-	playback Playback
+	devices  devicesTable
+	playback playback
 }
 
-type Playback struct {
+type playback struct {
 	previous *tui.Button
 	next     *tui.Button
 	stop     *tui.Button
@@ -38,13 +38,13 @@ type Playback struct {
 	box      *tui.Box
 }
 
-type AlbumsList struct {
+type albumsList struct {
 	table tui.Table
 	box   tui.Box
 }
 
-type Layout struct {
-	currently CurrentlyPlaying
+type layout struct {
+	currently currentlyPlaying
 }
 
 var debugMode bool
@@ -55,6 +55,8 @@ func checkMode() {
 	debugMode = *debugModeFlag
 }
 
+// SpotifyClient is a wrapper interface around spotify.client
+// used in order to improve testability of the code.
 type SpotifyClient interface {
 	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
 	Play() error
@@ -217,12 +219,12 @@ func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {
 	if err != nil {
 		currentSongName = "None"
 	} else {
-		currentSongName = GetTrackRepr(currentlyPlaying.Item)
+		currentSongName = getTrackRepr(currentlyPlaying.Item)
 	}
 	label.SetText(currentSongName)
 }
 
-func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Label) Playback {
+func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Label) playback {
 	playButton := tui.NewButton("[ ▷ Play]")
 	stopButton := tui.NewButton("[ ■ Stop]")
 	previousButton := tui.NewButton("[ |◄ Previous ]")
@@ -256,7 +258,7 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	)
 	buttons.SetBorder(true)
 
-	return Playback{
+	return playback{
 		play:     playButton,
 		stop:     stopButton,
 		previous: previousButton,
@@ -265,7 +267,7 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	}
 }
 
-func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
+func createAvailableDevicesTable(client SpotifyClient) devicesTable {
 	time.Sleep(time.Second * 2) // Workaround, will be done smarter
 	table := tui.NewTable(0, 0)
 	tableBox := tui.NewHBox(table)
@@ -274,7 +276,7 @@ func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
 
 	avalaibleDevices, err := client.PlayerDevices()
 	if err != nil {
-		return DevicesTable{box: tableBox, table: table}
+		return devicesTable{box: tableBox, table: table}
 	}
 	table.AppendRow(
 		tui.NewLabel("Name"),
@@ -298,7 +300,7 @@ func createAvailableDevicesTable(client SpotifyClient) DevicesTable {
 		transferPlaybackToDevice(client, &avalaibleDevices[selctedRow-1])
 	})
 
-	return DevicesTable{box: tableBox, table: table}
+	return devicesTable{box: tableBox, table: table}
 }
 
 func transferPlaybackToDevice(client SpotifyClient, pd *spotify.PlayerDevice) {
@@ -307,7 +309,7 @@ func transferPlaybackToDevice(client SpotifyClient, pd *spotify.PlayerDevice) {
 
 func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 	for _, album := range albumsPage.Albums {
-		albums = append(albums, Album{album.Name, album.Artists[0].Name})
+		albumsDescriptions = append(albumsDescriptions, albumDescription{album.Name, album.Artists[0].Name})
 	}
 	albumsList := tui.NewTable(0, 0)
 	albumsList.SetColumnStretch(0, 1)
@@ -319,7 +321,7 @@ func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 		tui.NewLabel("Artist"),
 	)
 	colLength := 20
-	for _, album := range albums {
+	for _, album := range albumsDescriptions {
 		var artistRow, albumRow *tui.Label
 		if len(album.artist) > colLength {
 			artistRow = tui.NewLabel(album.artist[:colLength] + "...")
@@ -341,7 +343,7 @@ func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 	return albumListBox
 }
 
-func GetTrackRepr(track *spotify.FullTrack) string {
+func getTrackRepr(track *spotify.FullTrack) string {
 	var artistsNames []string
 	for _, artist := range track.Artists {
 		artistsNames = append(artistsNames, artist.Name)

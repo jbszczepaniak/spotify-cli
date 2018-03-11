@@ -96,7 +96,7 @@ func TestAuthCallback(t *testing.T) {
 	for _, c := range cases {
 		auth = c.f
 		r := httptest.NewRecorder()
-		server := Server{client: make(chan *spotify.Client)}
+		server := server{client: make(chan *spotify.Client)}
 		go func() {
 			<-server.client
 		}()

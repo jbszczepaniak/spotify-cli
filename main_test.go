@@ -32,7 +32,7 @@ func TestGetTrackRepr(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		got := GetTrackRepr(test.track)
+		got := getTrackRepr(test.track)
 		if got != test.repr {
 			t.Errorf("Got: %v, want: %v", got, test.repr)
 		}
