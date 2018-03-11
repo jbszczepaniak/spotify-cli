@@ -98,6 +98,7 @@ func main() {
 	currentlyPlayingBox.SetTitle("Currently playing")
 
 	searchedSongsTable := tui.NewTable(0, 0)
+	searchedSongsSlice := make([]spotify.FullTrack, 0)
 	searchedSongs := tui.NewVBox(searchedSongsTable, tui.NewSpacer())
 	searchedSongs.SetTitle("Songs")
 	searchedSongs.SetBorder(true)
@@ -114,18 +115,28 @@ func main() {
 		client.PlayOpt(&spotify.PlayOptions{PlaybackContext: albumURI})
 	})
 
+	searchedSongsTable.OnItemActivated(func(t *tui.Table) {
+		selectedRow := t.Selected()
+		trackURI := &searchedSongsSlice[selectedRow].URI
+		client.PlayOpt(&spotify.PlayOptions{URIs: []spotify.URI{*trackURI}}) // Playing single songs is different
+	})
+
 	search := tui.NewEntry()
 	search.OnSubmit(func(entry *tui.Entry) {
 		result, _ := client.Search(entry.Text(), spotify.SearchTypeAlbum|spotify.SearchTypeTrack)
 		searchedAlbumsTable.RemoveRows()
 		searchedAlbumsSlice = searchedAlbumsSlice[:0]
+
 		searchedSongsTable.RemoveRows()
+		searchedSongsSlice = searchedSongsSlice[:0]
+
 		for _, i := range result.Albums.Albums {
 			searchedAlbumsTable.AppendRow(tui.NewLabel(i.Name))
 			searchedAlbumsSlice = append(searchedAlbumsSlice, i)
 		}
 		for _, i := range result.Tracks.Tracks {
 			searchedSongsTable.AppendRow(tui.NewLabel(i.Name))
+			searchedSongsSlice = append(searchedSongsSlice, i)
 		}
 
 	})
@@ -150,9 +161,9 @@ func main() {
 
 	playBackButtons := []tui.Widget{playbackButtons.previous, playbackButtons.play, playbackButtons.stop, playbackButtons.next}
 	focusables := append(playBackButtons, search)
-	focusables = append(focusables, availableDevicesTable.table)
 	focusables = append(focusables, searchedSongsTable)
 	focusables = append(focusables, searchedAlbumsTable)
+	focusables = append(focusables, availableDevicesTable.table)
 
 	tui.DefaultFocusChain.Set(focusables...)
 
