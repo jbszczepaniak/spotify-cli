@@ -28,6 +28,7 @@ git clone git@github.com:jedruniu/spotify-cli.git
 ```
 go get -v github.com/marcusolsson/tui-go
 go get -v github.com/zmb3/spotify
+go get -v github.com/google/uuid
 ```
 4. Build application
 ```
