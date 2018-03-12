@@ -12,7 +12,7 @@ Spotify Client which runs in the terminal.
 2. Google Chrome browser installed
 3. Go language installed 
 4. Premium Spotify Account
-5. Created Spotify Application under https://beta.developer.spotify.com/dashboard/applications
+5. Created Spotify Application under https://beta.developer.spotify.com/dashboard/applications (set redirect URI to http://localhost:8888/spotify-cli)
 
 ### Installing
 1. Go to https://beta.developer.spotify.com/dashboard/applications, find created earlier Spotify Application, find Client ID and Client Secret, and put them in environment variables
