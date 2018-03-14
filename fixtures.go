@@ -1,12 +1,30 @@
 package main
 
 import (
+	// "fmt"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 )
 
-// FakedClient is a dummy struct used when running in debug mode
-type FakedClient struct {
+func NewDebugClient() SpotifyClient {
+	return DebugClient{Player: &DebugPlayer{}}
+}
+
+// DebugClient is a dummy struct used when running in debug mode
+type DebugClient struct {
+	Player
+}
+
+type DebugPlayer struct{}
+
+// Play is a dummy implementation used when running in debug mode
+func (fc DebugPlayer) Play() error {
+	return nil
+}
+
+// PlayOpt is a dummy implementation used when running in debug mode
+func (fc DebugPlayer) PlayOpt(opt *spotify.PlayOptions) error {
+	return nil
 }
 
 var albumsArtistsData = []struct {
@@ -22,7 +40,7 @@ var albumsArtistsData = []struct {
 }
 
 // CurrentUsersAlbums is a dummy implementation used when running in debug mode
-func (fc FakedClient) CurrentUsersAlbums() (*spotify.SavedAlbumPage, error) {
+func (fc DebugClient) CurrentUsersAlbums() (*spotify.SavedAlbumPage, error) {
 	fakedAlbums := make([]spotify.SavedAlbum, 0)
 	for _, albumArtist := range albumsArtistsData {
 		album := spotify.SavedAlbum{}
@@ -35,38 +53,28 @@ func (fc FakedClient) CurrentUsersAlbums() (*spotify.SavedAlbumPage, error) {
 	}, nil
 }
 
-// Play is a dummy implementation used when running in debug mode
-func (fc FakedClient) Play() error {
-	return nil
-}
-
 // Previous is a dummy implementation used when running in debug mode
-func (fc FakedClient) Previous() error {
+func (fc DebugClient) Previous() error {
 	return nil
 }
 
 // Pause is a dummy implementation used when running in debug mode
-func (fc FakedClient) Pause() error {
+func (fc DebugClient) Pause() error {
 	return nil
 }
 
 // Next is a dummy implementation used when running in debug mode
-func (fc FakedClient) Next() error {
-	return nil
-}
-
-// PlayOpt is a dummy implementation used when running in debug mode
-func (fc FakedClient) PlayOpt(opt *spotify.PlayOptions) error {
+func (fc DebugClient) Next() error {
 	return nil
 }
 
 // PlayerCurrentlyPlaying is a dummy implementation used when running in debug mode
-func (fc FakedClient) PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error) {
+func (fc DebugClient) PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error) {
 	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{SimpleTrack: spotify.SimpleTrack{Name: "Currently Playing Song"}}}, nil
 }
 
 // PlayerDevices is a dummy implementation used when running in debug mode
-func (fc FakedClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
+func (fc DebugClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
 
 	return []spotify.PlayerDevice{
 		{Name: "iPad", Type: "Tablet"},
@@ -76,21 +84,21 @@ func (fc FakedClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
 }
 
 // TransferPlayback is a dummy implementation used when running in debug mode
-func (fc FakedClient) TransferPlayback(id spotify.ID, play bool) error {
+func (fc DebugClient) TransferPlayback(id spotify.ID, play bool) error {
 	return nil
 }
 
 // CurrentUser is a dummy implementation used when running in debug mode
-func (fc FakedClient) CurrentUser() (*spotify.PrivateUser, error) {
+func (fc DebugClient) CurrentUser() (*spotify.PrivateUser, error) {
 	return &spotify.PrivateUser{}, nil
 }
 
 // Token is a dummy implementation used when running in debug mode
-func (fc FakedClient) Token() (*oauth2.Token, error) {
+func (fc DebugClient) Token() (*oauth2.Token, error) {
 	return &oauth2.Token{}, nil
 }
 
 // Search is a dummy implementation used when running in debug mode
-func (fc FakedClient) Search(query string, t spotify.SearchType) (*spotify.SearchResult, error) {
+func (fc DebugClient) Search(query string, t spotify.SearchType) (*spotify.SearchResult, error) {
 	return nil, nil
 }

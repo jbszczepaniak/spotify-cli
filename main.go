@@ -59,8 +59,7 @@ func checkMode() {
 // used in order to improve testability of the code.
 type SpotifyClient interface {
 	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
-	Play() error
-	PlayOpt(opt *spotify.PlayOptions) error
+	Player
 	Pause() error
 	Previous() error
 	Next() error
@@ -72,11 +71,16 @@ type SpotifyClient interface {
 	Search(query string, t spotify.SearchType) (*spotify.SearchResult, error)
 }
 
+type Player interface {
+	Play() error
+	PlayOpt(opt *spotify.PlayOptions) error
+}
+
 func main() {
 	checkMode()
 	var client SpotifyClient
 	if debugMode {
-		client = FakedClient{}
+		client = NewDebugClient()
 	} else {
 		client = authenticate()
 	}
@@ -109,29 +113,20 @@ func main() {
 			entry.Text(),
 			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
 		)
-		searchedAlbums.table.RemoveRows()
-		searchedAlbums.data = searchedAlbums.data[:0]
 
-		searchedSongs.table.RemoveRows()
-		searchedSongs.data = searchedSongs.data[:0]
-
-		searchedArtists.table.RemoveRows()
-		searchedArtists.data = searchedArtists.data[:0]
-
+		searchedAlbums.resetSearchResults()
 		for _, i := range result.Albums.Albums {
-			searchedAlbums.table.AppendRow(tui.NewLabel(i.Name))
-			withURI := WithURI{URI: i.URI}
-			searchedAlbums.data = append(searchedAlbums.data, withURI)
+			searchedAlbums.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
 		}
+
+		searchedSongs.resetSearchResults()
 		for _, i := range result.Tracks.Tracks {
-			searchedSongs.table.AppendRow(tui.NewLabel(i.Name))
-			withURI := WithURI{URI: i.URI}
-			searchedSongs.data = append(searchedSongs.data, withURI)
+			searchedSongs.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
 		}
+
+		searchedArtists.resetSearchResults()
 		for _, i := range result.Artists.Artists {
-			searchedArtists.table.AppendRow(tui.NewLabel(i.Name))
-			withURI := WithURI{URI: i.URI}
-			searchedArtists.data = append(searchedArtists.data, withURI)
+			searchedArtists.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
 		}
 
 	})
