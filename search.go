@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
-	// "log"
+	"log"
 )
 
 type URIName struct {
@@ -39,9 +39,11 @@ func NewSearchResults(client SpotifyClient) *searchResults {
 		if err != nil {
 			err := client.PlayOpt(&spotify.PlayOptions{PlaybackContext: trackURI}) // Fallback to these if previous vall won't work parameters.
 			if err != nil {
-				panic("Could not get search result")
+				log.Printf("Could not play searched URI: %s\n", *trackURI)
+				return
 			}
 		}
+		log.Printf("Successfuly played searched URI: %s\n", *trackURI)
 	}
 	table.OnItemActivated(callback)
 	results.onItemActivatedCallback = callback

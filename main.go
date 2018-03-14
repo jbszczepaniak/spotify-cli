@@ -7,6 +7,7 @@ import (
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -77,6 +78,10 @@ type Player interface {
 }
 
 func main() {
+	f, _ := os.Create("log.txt")
+	defer f.Close()
+	log.SetOutput(f)
+
 	checkMode()
 	var client SpotifyClient
 	if debugMode {
