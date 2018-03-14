@@ -35,34 +35,34 @@ func (fp *FakePlayer) Play() error {
 
 func TestOnItemActivatedCallback(t *testing.T) {
 	cases := []struct {
-		errCallWithURI     bool
-		errCallWithContext bool
-		expectedCalls      int
-		expectedLogs       string
+		errCallWithURI          bool
+		errCallWithContext      bool
+		expectedPlayOptNumCalls int
+		expectedLogs            string
 	}{
 		{
-			errCallWithURI:     true,
-			errCallWithContext: true,
-			expectedCalls:      2,
-			expectedLogs:       "Could not play searched URI: some:spotify:uri\n",
+			errCallWithURI:          true,
+			errCallWithContext:      true,
+			expectedPlayOptNumCalls: 2,
+			expectedLogs:            "Could not play searched URI: some:spotify:uri\n",
 		},
 		{
-			errCallWithURI:     false,
-			errCallWithContext: false,
-			expectedCalls:      1,
-			expectedLogs:       "Successfuly played searched URI: some:spotify:uri\n",
+			errCallWithURI:          false,
+			errCallWithContext:      false,
+			expectedPlayOptNumCalls: 1,
+			expectedLogs:            "Successfuly played searched URI: some:spotify:uri\n",
 		},
 		{
-			errCallWithURI:     true,
-			errCallWithContext: false,
-			expectedCalls:      2,
-			expectedLogs:       "Successfuly played searched URI: some:spotify:uri\n",
+			errCallWithURI:          true,
+			errCallWithContext:      false,
+			expectedPlayOptNumCalls: 2,
+			expectedLogs:            "Successfuly played searched URI: some:spotify:uri\n",
 		},
 		{
-			errCallWithURI:     false,
-			errCallWithContext: true,
-			expectedCalls:      1,
-			expectedLogs:       "Successfuly played searched URI: some:spotify:uri\n",
+			errCallWithURI:          false,
+			errCallWithContext:      true,
+			expectedPlayOptNumCalls: 1,
+			expectedLogs:            "Successfuly played searched URI: some:spotify:uri\n",
 		},
 	}
 
@@ -86,8 +86,24 @@ func TestOnItemActivatedCallback(t *testing.T) {
 			t.Errorf("Expect log to have suffix %s but log was %s", c.expectedLogs, str.String())
 		}
 
-		if fakePlayer.calls != c.expectedCalls {
-			t.Errorf("Should be called %d times, but was called %d times", c.expectedCalls, fakePlayer.calls)
+		if fakePlayer.calls != c.expectedPlayOptNumCalls {
+			t.Errorf("Should be called %d times, but was called %d times", c.expectedPlayOptNumCalls, fakePlayer.calls)
 		}
+	}
+}
+
+func TestAppendRemoveSearchResults(t *testing.T) {
+	client := &DebugClient{}
+	results := NewSearchResults(client)
+	testUriName := URIName{URI: "test:spotify:uri", Name: "Test Name"}
+
+	results.appendSearchResult(testUriName)
+	if resultsItemsCount := len(results.data); resultsItemsCount != 1 {
+		t.Fatal("Expect results to have 1 item, but results have %d items", resultsItemsCount)
+	}
+
+	results.resetSearchResults()
+	if resultsItemsCount := len(results.data); resultsItemsCount != 0 {
+		t.Fatal("Expect results to have 0 item, but results have %d items", resultsItemsCount)
 	}
 }
