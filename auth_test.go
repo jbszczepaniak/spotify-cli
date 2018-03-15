@@ -109,3 +109,18 @@ func TestAuthCallback(t *testing.T) {
 		}
 	}
 }
+
+type FakeCmd struct {
+}
+
+func (fc *FakeCmd) Start() error {
+	return nil
+}
+
+func TestNotSupportedOS(t *testing.T) {
+	runtimeGOOS = "Windows 10"
+	_, err := openBroswerWith("http://golang.org")
+	if expectedMsg := "Sorry, Windows 10 OS is not supported"; err.Error() != expectedMsg {
+		t.Fatal("Expected error to be: %s, have %s", expectedMsg, err)
+	}
+}

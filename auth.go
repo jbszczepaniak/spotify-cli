@@ -77,16 +77,19 @@ func (s *server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
 	s.playerChanged <- r.FormValue("deviceId")
 }
 
+var runtimeGOOS = runtime.GOOS
+var execCommand = exec.Command
+
 // openBrowserWith open browsers with given url and returns process id of opened browser
 func openBroswerWith(url string) (int, error) {
 	var cmd *exec.Cmd
-	switch runtime.GOOS {
+	switch runtimeGOOS {
 	case "darwin":
-		cmd = exec.Command("open", "-a", "/Applications/Google Chrome.app", url)
+		cmd = execCommand("open", "-a", "/Applications/Google Chrome.app", url)
 	case "linux":
-		cmd = exec.Command("xdg-open", url)
+		cmd = execCommand("xdg-open", url)
 	default:
-		return 0, fmt.Errorf("Sorry, %v OS is not supported", runtime.GOOS)
+		return 0, fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
 	}
 
 	err := cmd.Start()
