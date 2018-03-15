@@ -126,7 +126,7 @@ func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
 	playbackPage, err := insertTokenToTemplate(token.AccessToken, t)
 
 	if err != nil {
-		http.Error(w, "Couldn't get token", http.StatusBadRequest)
+		http.Error(w, "Couldn't get token", http.StatusNotFound)
 		return
 	}
 
@@ -142,8 +142,9 @@ type tokenToInsert struct {
 }
 
 var osCreate = os.Create
+var insertTokenToTemplate = insertTokenToTemplateImpl
 
-func insertTokenToTemplate(token string, template templateInterface) (string, error) {
+func insertTokenToTemplateImpl(token string, template templateInterface) (string, error) {
 	buf := new(bytes.Buffer)
 	err := template.Execute(buf, tokenToInsert{token})
 	if err != nil {

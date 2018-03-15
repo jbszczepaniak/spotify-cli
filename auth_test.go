@@ -73,27 +73,43 @@ func (am FakeAuthenticator) AuthURL(state string) string {
 
 func TestAuthCallback(t *testing.T) {
 	cases := []struct {
-		f                  FakeAuthenticator
-		expectedStatusCode int
-		expectedJSsnippet  string
+		f                        FakeAuthenticator
+		expectedStatusCode       int
+		expectedJSsnippet        string
+		insertTokenToTemplateErr bool
 	}{
 		{
 			f: FakeAuthenticator{
 				Err: nil,
 			},
-			expectedStatusCode: http.StatusOK,
-			expectedJSsnippet:  "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>",
+			expectedStatusCode:       http.StatusOK,
+			expectedJSsnippet:        "<script src=\"https://sdk.scdn.co/spotify-player.js\"></script>",
+			insertTokenToTemplateErr: false,
+		},
+		{
+			f: FakeAuthenticator{
+				Err: nil,
+			},
+			expectedStatusCode:       http.StatusNotFound,
+			expectedJSsnippet:        "",
+			insertTokenToTemplateErr: true,
 		},
 		{
 			f: FakeAuthenticator{
 				Err: errors.New(""),
 			},
-			expectedStatusCode: http.StatusNotFound,
-			expectedJSsnippet:  "",
+			expectedStatusCode:       http.StatusNotFound,
+			expectedJSsnippet:        "",
+			insertTokenToTemplateErr: false,
 		},
 	}
 
 	for _, c := range cases {
+		if c.insertTokenToTemplateErr {
+			insertTokenToTemplate = func(token string, template templateInterface) (string, error) {
+				return "", errors.New("")
+			}
+		}
 		auth = c.f
 		r := httptest.NewRecorder()
 		server := server{client: make(chan *spotify.Client)}
