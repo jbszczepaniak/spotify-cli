@@ -176,12 +176,14 @@ func main() {
 
 	ui.SetKeybinding("Esc", func() {
 		ui.Quit()
+		closeBrowser <- true
 		return
 	})
 
 	if err := ui.Run(); err != nil {
 		panic(err)
 	}
+
 }
 
 func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {

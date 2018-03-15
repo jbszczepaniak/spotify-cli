@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"html/template"
@@ -17,6 +18,7 @@ import (
 
 var (
 	auth         = getSpotifyAuthenticator()
+	closeBrowser = make(chan bool)
 	state        = uuid.New().String()
 	redirectURI  = "http://localhost:8888/spotify-cli"
 	clientID     = os.Getenv("SPOTIFY_CLIENT_ID")
@@ -58,18 +60,33 @@ func authenticate() SpotifyClient {
 		playerChanged: make(chan string),
 	}
 
+	http.HandleFunc("/ws", handleWebSocket)
 	http.HandleFunc("/spotify-cli", s.authCallback)
 	http.HandleFunc("/player-is-up", s.stateChangedCallback)
 	go http.ListenAndServe(":8888", nil)
 
 	url := auth.AuthURL(state)
-
 	err := openBroswerWith(url)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	return <-s.client
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	<-closeBrowser
+	conn.WriteJSON("{\"close\": true}")
 }
 
 func (s *server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {

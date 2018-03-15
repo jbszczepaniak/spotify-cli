@@ -42,6 +42,19 @@
       //doSomething with body;
     });
   }
+  if (window["WebSocket"]) {
+    conn = new WebSocket("ws://" + document.location.host + "/ws");
+    conn.onmessage = function (evt) {
+      console.log(evt.data);
+      var parsed = JSON.parse(JSON.parse(evt.data));
+      if (parsed['close']) {
+        open(location, '_self').close();
+      }
+    }
+  }
+
+
+
   </script>
 </body>
 </html>
