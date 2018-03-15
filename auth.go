@@ -80,7 +80,7 @@ func (s *server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
 var runtimeGOOS = runtime.GOOS
 var execCommand = exec.Command
 
-// openBrowserWith open browsers with given url and returns process id of opened browser
+// openBrowserWith open browsers with given url
 func openBroswerWith(url string) error {
 	switch runtimeGOOS {
 	case "darwin":
