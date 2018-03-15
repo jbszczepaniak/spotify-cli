@@ -64,7 +64,7 @@ func authenticate() SpotifyClient {
 
 	url := auth.AuthURL(state)
 
-	_, err := openBroswerWith(url)
+	err := openBroswerWith(url)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,23 +81,15 @@ var runtimeGOOS = runtime.GOOS
 var execCommand = exec.Command
 
 // openBrowserWith open browsers with given url and returns process id of opened browser
-func openBroswerWith(url string) (int, error) {
-	var cmd *exec.Cmd
+func openBroswerWith(url string) error {
 	switch runtimeGOOS {
 	case "darwin":
-		cmd = execCommand("open", "-a", "/Applications/Google Chrome.app", url)
+		return execCommand("open", "-a", "/Applications/Google Chrome.app", url).Start()
 	case "linux":
-		cmd = execCommand("xdg-open", url)
+		return execCommand("xdg-open", url).Start()
 	default:
-		return 0, fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
+		return fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
 	}
-
-	err := cmd.Start()
-	if err != nil {
-		return 0, err
-	}
-	process := cmd.Process
-	return process.Pid, nil
 }
 
 // authCallback is a function to by Spotify upon successful
