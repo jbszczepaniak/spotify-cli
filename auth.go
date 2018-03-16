@@ -18,7 +18,6 @@ import (
 
 var (
 	auth         = getSpotifyAuthenticator()
-	closeBrowser = make(chan bool)
 	state        = uuid.New().String()
 	redirectURI  = "http://localhost:8888/spotify-cli"
 	clientID     = os.Getenv("SPOTIFY_CLIENT_ID")
@@ -48,70 +47,29 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 	return auth
 }
 
-type server struct {
-	client        chan *spotify.Client
-	playerChanged chan string
+type appState struct {
+	client       chan *spotify.Client
+	playerChange chan bool
 }
 
 // authenticate authenticate user with Sotify API
-func authenticate() SpotifyClient {
-	s := server{
-		client:        make(chan *spotify.Client),
-		playerChanged: make(chan string),
-	}
-
-	http.HandleFunc("/ws", handleWebSocket)
-	http.HandleFunc("/spotify-cli", s.authCallback)
-	http.HandleFunc("/player-is-up", s.stateChangedCallback)
-	go http.ListenAndServe(":8888", nil)
+func authenticate(as appState) (SpotifyClient, error) {
+	h := http.NewServeMux()
+	h.HandleFunc("/ws", as.handleWebSocket)
+	h.HandleFunc("/spotify-cli", as.authCallback)
+	go http.ListenAndServe(":8888", h)
 
 	url := auth.AuthURL(state)
-	err := openBroswerWith(url)
+	err := openBrowserWith(url)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Could not open browser")
 	}
-
-	return <-s.client
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	<-closeBrowser
-	conn.WriteJSON("{\"close\": true}")
-}
-
-func (s *server) stateChangedCallback(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	s.playerChanged <- r.FormValue("deviceId")
-}
-
-var runtimeGOOS = runtime.GOOS
-var execCommand = exec.Command
-
-// openBrowserWith open browsers with given url
-func openBroswerWith(url string) error {
-	switch runtimeGOOS {
-	case "darwin":
-		return execCommand("open", "-a", "/Applications/Google Chrome.app", url).Start()
-	case "linux":
-		return execCommand("xdg-open", url).Start()
-	default:
-		return fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
-	}
+	return <-as.client, err
 }
 
 // authCallback is a function to by Spotify upon successful
 // user login at their site
-func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
+func (s *appState) authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusNotFound)
@@ -131,6 +89,38 @@ func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, playbackPage)
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	<-s.playerChange
+	conn.WriteJSON("{\"close\": true}")
+}
+
+var runtimeGOOS = runtime.GOOS
+var execCommand = exec.Command
+
+var openBrowserWith = openBrowserWithImpl
+
+// openBrowserWith open browsers with given url
+func openBrowserWithImpl(url string) error {
+	switch runtimeGOOS {
+	case "darwin":
+		return execCommand("open", "-a", "/Applications/Google Chrome.app", url).Start()
+	case "linux":
+		return execCommand("xdg-open", url).Start()
+	default:
+		return fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
+	}
 }
 
 type templateInterface interface {

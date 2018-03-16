@@ -12,6 +12,47 @@ import (
 	"testing"
 )
 
+func TestAuthenticateClient(t *testing.T) {
+	cases := []struct {
+		openBrowserWithErr bool
+		expectedErr        bool
+	}{
+		{
+			openBrowserWithErr: true,
+			expectedErr:        true,
+		},
+		{
+			openBrowserWithErr: false,
+			expectedErr:        false,
+		},
+	}
+
+	for _, c := range cases {
+		openBrowserWith = func(s string) error {
+			if c.expectedErr {
+				return fmt.Errorf("Could not open browser")
+			}
+			return nil
+		}
+		defer func() { openBrowserWith = openBrowserWithImpl }()
+		testState := appState{
+			client:       make(chan *spotify.Client),
+			playerChange: make(chan bool),
+		}
+		go func() {
+			testState.client <- &spotify.Client{}
+		}()
+
+		_, err := authenticate(testState)
+		if err == nil && c.expectedErr {
+			t.Error("Error expected, but there was not one")
+		}
+		if err != nil && !c.expectedErr {
+			t.Error("Error was not expected, but there was not")
+		}
+	}
+}
+
 type TemplateMock struct {
 	ExecuteCount int
 	ExecuteData  interface{}
@@ -112,11 +153,11 @@ func TestAuthCallback(t *testing.T) {
 		}
 		auth = c.f
 		r := httptest.NewRecorder()
-		server := server{client: make(chan *spotify.Client)}
+		as := appState{client: make(chan *spotify.Client)}
 		go func() {
-			<-server.client
+			<-as.client
 		}()
-		server.authCallback(r, httptest.NewRequest("GET", "/", nil))
+		as.authCallback(r, httptest.NewRequest("GET", "/", nil))
 		if c.expectedStatusCode != r.Result().StatusCode {
 			t.Errorf("Expected status to be %d but it was %d", c.expectedStatusCode, r.Result().StatusCode)
 		}
@@ -128,7 +169,7 @@ func TestAuthCallback(t *testing.T) {
 
 func TestNotSupportedOS(t *testing.T) {
 	runtimeGOOS = "Windows 10"
-	err := openBroswerWith("http://golang.org")
+	err := openBrowserWith("http://golang.org")
 	if expectedMsg := "Sorry, Windows 10 OS is not supported"; err.Error() != expectedMsg {
 		t.Fatal("Expected error to be: %s, have %s", expectedMsg, err)
 	}

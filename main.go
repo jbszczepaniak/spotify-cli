@@ -83,11 +83,20 @@ func main() {
 	log.SetOutput(f)
 
 	checkMode()
+
 	var client SpotifyClient
+	as := appState{
+		client:       make(chan *spotify.Client),
+		playerChange: make(chan bool),
+	}
 	if debugMode {
 		client = NewDebugClient()
 	} else {
-		client = authenticate()
+		var err error
+		client, err = authenticate(as)
+		if err != nil {
+			panic("Could not get client, shutting down.")
+		}
 	}
 
 	spotifyAlbums, err := client.CurrentUsersAlbums()
@@ -176,7 +185,7 @@ func main() {
 
 	ui.SetKeybinding("Esc", func() {
 		ui.Quit()
-		closeBrowser <- true
+		as.playerChange <- true
 		return
 	})
 

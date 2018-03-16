@@ -27,21 +27,12 @@
 
       // Ready
       player.addListener('ready', ({ device_id }) => {
-        callBackend('/player-is-up?deviceId='+device_id);
         console.log('Ready with Device ID', device_id);
       });
 
       // Connect to the player!
       player.connect();
     };    
-  function callBackend(url) {
-    fetch(url).then(function (response) {
-      return response.json();
-    })
-    .then(function (body) {
-      //doSomething with body;
-    });
-  }
   if (window["WebSocket"]) {
     conn = new WebSocket("ws://" + document.location.host + "/ws");
     conn.onmessage = function (evt) {
