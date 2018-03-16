@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "fmt"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 )
