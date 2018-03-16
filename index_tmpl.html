@@ -9,6 +9,14 @@
 
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <script type="text/javascript" charset="utf-8" async defer>
+    conn = new WebSocket("ws://" + document.location.host + "/ws");
+    conn.onmessage = function (evt) {
+      console.log(evt.data);
+      var parsed = JSON.parse(JSON.parse(evt.data));
+      if (parsed['close']) {
+        open(location, '_self').close();
+      }
+    }
     window.onSpotifyWebPlaybackSDKReady = () => {
       const token = {{.Token}};
       const player = new Spotify.Player({
@@ -27,25 +35,12 @@
 
       // Ready
       player.addListener('ready', ({ device_id }) => {
-        console.log('Ready with Device ID', device_id);
+        conn.send(JSON.stringify({"DeviceReady": device_id}))
       });
 
       // Connect to the player!
       player.connect();
     };    
-  if (window["WebSocket"]) {
-    conn = new WebSocket("ws://" + document.location.host + "/ws");
-    conn.onmessage = function (evt) {
-      console.log(evt.data);
-      var parsed = JSON.parse(JSON.parse(evt.data));
-      if (parsed['close']) {
-        open(location, '_self').close();
-      }
-    }
-  }
-
-
-
   </script>
 </body>
 </html>

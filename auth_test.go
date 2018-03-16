@@ -36,8 +36,9 @@ func TestAuthenticateClient(t *testing.T) {
 		}
 		defer func() { openBrowserWith = openBrowserWithImpl }()
 		testState := appState{
-			client:       make(chan *spotify.Client),
-			playerChange: make(chan bool),
+			client:         make(chan *spotify.Client),
+			playerShutdown: make(chan bool),
+			playerDeviceId: make(chan spotify.ID),
 		}
 		go func() {
 			testState.client <- &spotify.Client{}

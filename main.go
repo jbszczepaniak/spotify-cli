@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 type albumDescription struct {
@@ -86,8 +85,9 @@ func main() {
 
 	var client SpotifyClient
 	as := appState{
-		client:       make(chan *spotify.Client),
-		playerChange: make(chan bool),
+		client:         make(chan *spotify.Client),
+		playerShutdown: make(chan bool),
+		playerDeviceId: make(chan spotify.ID),
 	}
 	if debugMode {
 		client = NewDebugClient()
@@ -106,7 +106,7 @@ func main() {
 	currentlyPlayingLabel := tui.NewLabel("")
 	updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 
-	availableDevicesTable := createAvailableDevicesTable(client)
+	availableDevicesTable, _ := createAvailableDevicesTable(as, client)
 	albumsList := renderAlbumsTable(spotifyAlbums)
 	albumsList.SetSizePolicy(tui.Minimum, tui.Preferred)
 	sidebar := tui.NewHBox(tui.NewVBox(albumsList, tui.NewSpacer()), tui.NewSpacer())
@@ -176,8 +176,6 @@ func main() {
 	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
 	theme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
 
-	// tui.DefaultTheme.SetStyle("table.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
-
 	ui, err := tui.New(box)
 	if err != nil {
 		panic(err)
@@ -185,7 +183,7 @@ func main() {
 
 	ui.SetKeybinding("Esc", func() {
 		ui.Quit()
-		as.playerChange <- true
+		as.playerShutdown <- true
 		return
 	})
 
@@ -249,8 +247,13 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	}
 }
 
-func createAvailableDevicesTable(client SpotifyClient) devicesTable {
-	time.Sleep(time.Second * 2) // Workaround, will be done smarter
+func createAvailableDevicesTable(state appState, client SpotifyClient) (*devicesTable, error) {
+	SDKplayerID := <-state.playerDeviceId
+	err := transferPlaybackToDevice(client, SDKplayerID)
+	if err != nil {
+		return nil, err
+	}
+
 	table := tui.NewTable(0, 0)
 	tableBox := tui.NewHBox(table)
 	tableBox.SetTitle("Devices")
@@ -258,7 +261,7 @@ func createAvailableDevicesTable(client SpotifyClient) devicesTable {
 
 	avalaibleDevices, err := client.PlayerDevices()
 	if err != nil {
-		return devicesTable{box: tableBox, table: table}
+		return nil, err
 	}
 	table.AppendRow(
 		tui.NewLabel("Name"),
@@ -270,8 +273,8 @@ func createAvailableDevicesTable(client SpotifyClient) devicesTable {
 			tui.NewLabel(device.Name),
 			tui.NewLabel(device.Type),
 		)
-		if device.Active {
-			table.SetSelected(i)
+		if device.ID == SDKplayerID {
+			table.SetSelected(i + 1)
 		}
 	}
 
@@ -280,14 +283,14 @@ func createAvailableDevicesTable(client SpotifyClient) devicesTable {
 		if selctedRow == 0 {
 			return // Selecting table header
 		}
-		transferPlaybackToDevice(client, &avalaibleDevices[selctedRow-1])
+		transferPlaybackToDevice(client, avalaibleDevices[selctedRow-1].ID)
 	})
 
-	return devicesTable{box: tableBox, table: table}
+	return &devicesTable{box: tableBox, table: table}, nil
 }
 
-func transferPlaybackToDevice(client SpotifyClient, pd *spotify.PlayerDevice) {
-	client.TransferPlayback(pd.ID, true)
+func transferPlaybackToDevice(client SpotifyClient, id spotify.ID) error {
+	return client.TransferPlayback(id, true)
 }
 
 func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {

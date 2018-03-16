@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -48,8 +49,9 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 }
 
 type appState struct {
-	client       chan *spotify.Client
-	playerChange chan bool
+	client         chan *spotify.Client
+	playerShutdown chan bool
+	playerDeviceId chan spotify.ID
 }
 
 // authenticate authenticate user with Sotify API
@@ -102,7 +104,17 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	<-s.playerChange
+
+	type WebPlayBackState struct {
+		DeviceReady string
+	}
+
+	var v WebPlayBackState
+	_, message, err := conn.ReadMessage()
+	json.Unmarshal(message, &v)
+	s.playerDeviceId <- spotify.ID(v.DeviceReady)
+
+	<-s.playerShutdown
 	conn.WriteJSON("{\"close\": true}")
 }
 
