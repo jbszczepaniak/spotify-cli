@@ -98,6 +98,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type WebPlayBackState struct {
+	DeviceReady string
+}
+
 func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -105,13 +109,9 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type WebPlayBackState struct {
-		DeviceReady string
-	}
-
 	var v WebPlayBackState
 	_, message, err := conn.ReadMessage()
-	json.Unmarshal(message, &v)
+	err = json.Unmarshal(message, &v)
 	s.playerDeviceId <- spotify.ID(v.DeviceReady)
 
 	<-s.playerShutdown

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"io"
@@ -168,10 +170,40 @@ func TestAuthCallback(t *testing.T) {
 	}
 }
 
-func TestNotSupportedOS(t *testing.T) {
+func TestOpenBrowserNotSupportedOS(t *testing.T) {
 	runtimeGOOS = "Windows 10"
 	err := openBrowserWith("http://golang.org")
 	if expectedMsg := "Sorry, Windows 10 OS is not supported"; err.Error() != expectedMsg {
 		t.Fatal("Expected error to be: %s, have %s", expectedMsg, err)
 	}
+}
+
+func TestWebSocketHandler(t *testing.T) {
+	as := appState{
+		client:         make(chan *spotify.Client),
+		playerShutdown: make(chan bool),
+		playerDeviceId: make(chan spotify.ID),
+	}
+
+	h := http.NewServeMux()
+	h.HandleFunc("/ws", as.handleWebSocket)
+	go http.ListenAndServe(":8005", h)
+
+	// Connect to the server
+	ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:8005/ws", nil)
+	if err != nil {
+		t.Fatal("Unable to dial websocket")
+	}
+	expectedReadyDeviceId := "1jdjd8dj38djd09dfhjk"
+	msg := WebPlayBackState{DeviceReady: expectedReadyDeviceId}
+	b, _ := json.Marshal(msg)
+	ws.WriteMessage(websocket.TextMessage, b)
+
+	readyDeviceId := string(<-as.playerDeviceId)
+
+	if readyDeviceId != expectedReadyDeviceId {
+		t.Fatalf("Expected id of ready device to be %s, have %s", expectedReadyDeviceId, readyDeviceId)
+	}
+
+	defer ws.Close()
 }
