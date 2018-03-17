@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
@@ -88,6 +89,7 @@ func main() {
 		client:         make(chan *spotify.Client),
 		playerShutdown: make(chan bool),
 		playerDeviceId: make(chan spotify.ID),
+		state:          uuid.New().String(),
 	}
 	if debugMode {
 		client = NewDebugClient()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
@@ -17,13 +16,7 @@ import (
 	"runtime"
 )
 
-var (
-	auth         = getSpotifyAuthenticator()
-	state        = uuid.New().String()
-	redirectURI  = "http://localhost:8888/spotify-cli"
-	clientID     = os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret = os.Getenv("SPOTIFY_SECRET")
-)
+var auth = getSpotifyAuthenticator()
 
 type spotifyAuthenticatorInterface interface {
 	AuthURL(string) string
@@ -32,6 +25,18 @@ type spotifyAuthenticatorInterface interface {
 }
 
 func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
+	envKeys := []string{"SPOTIFY_CLIENT_ID", "SPOTIFY_SECRET"}
+	envVars := map[string]string{}
+	for _, key := range envKeys {
+		v := os.Getenv(key)
+		if v == "" {
+			log.Fatalf("Quiting, there is no %s environment variable.", key)
+		}
+		envVars[key] = v
+	}
+
+	redirectURI := "http://localhost:8888/spotify-cli"
+
 	auth := spotify.NewAuthenticator(
 		redirectURI,
 		spotify.ScopeUserReadPrivate,
@@ -44,7 +49,7 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 		spotify.ScopeUserReadBirthdate,
 		spotify.ScopeUserReadEmail,
 	)
-	auth.SetAuthInfo(clientID, clientSecret)
+	auth.SetAuthInfo(envVars["SPOTIFY_CLIENT_ID"], envVars["SPOTIFY_SECRET"])
 	return auth
 }
 
@@ -52,6 +57,7 @@ type appState struct {
 	client         chan *spotify.Client
 	playerShutdown chan bool
 	playerDeviceId chan spotify.ID
+	state          string
 }
 
 // authenticate authenticate user with Sotify API
@@ -61,7 +67,7 @@ func authenticate(as appState) (SpotifyClient, error) {
 	h.HandleFunc("/spotify-cli", as.authCallback)
 	go http.ListenAndServe(":8888", h)
 
-	url := auth.AuthURL(state)
+	url := auth.AuthURL(as.state)
 	err := openBrowserWith(url)
 	if err != nil {
 		return nil, fmt.Errorf("Could not open browser")
@@ -72,7 +78,7 @@ func authenticate(as appState) (SpotifyClient, error) {
 // authCallback is a function to by Spotify upon successful
 // user login at their site
 func (s *appState) authCallback(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.Token(state, r)
+	token, err := auth.Token(s.state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusNotFound)
 		return
