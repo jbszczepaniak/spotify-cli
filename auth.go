@@ -127,12 +127,18 @@ var openBrowserWith = openBrowserWithImpl
 func openBrowserWithImpl(url string) error {
 	switch runtimeGOOS {
 	case "darwin":
-		return execCommand("open", "-a", "/Applications/Google Chrome.app", url).Start()
+		return startCommand(execCommand("open", "-a", "/Applications/Google Chrome.app", url))
 	case "linux":
-		return execCommand("xdg-open", url).Start()
+		return startCommand(execCommand("xdg-open", url))
 	default:
 		return fmt.Errorf("Sorry, %v OS is not supported", runtimeGOOS)
 	}
+}
+
+var startCommand = startCommandImpl
+
+func startCommandImpl(command *exec.Cmd) error {
+	return command.Start()
 }
 
 type templateInterface interface {

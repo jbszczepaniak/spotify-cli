@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -170,11 +171,43 @@ func TestAuthCallback(t *testing.T) {
 	}
 }
 
-func TestOpenBrowserNotSupportedOS(t *testing.T) {
-	runtimeGOOS = "Windows 10"
-	err := openBrowserWith("http://golang.org")
-	if expectedMsg := "Sorry, Windows 10 OS is not supported"; err.Error() != expectedMsg {
-		t.Fatal("Expected error to be: %s, have %s", expectedMsg, err)
+func TestOpenBrowser(t *testing.T) {
+	cases := []struct {
+		GOOS        string
+		expectedApp string
+		expectedErr bool
+	}{
+		{
+			GOOS:        "Windows 10",
+			expectedApp: "",
+			expectedErr: true,
+		},
+		{
+			GOOS:        "linux",
+			expectedApp: "xdg-open",
+			expectedErr: false,
+		},
+		{
+			GOOS:        "darwin",
+			expectedApp: "/usr/bin/open",
+			expectedErr: false,
+		},
+	}
+	url := "http://golang.org"
+	for _, c := range cases {
+		runtimeGOOS = c.GOOS
+		var app string
+		startCommand = func(command *exec.Cmd) error {
+			app = command.Path
+			return nil
+		}
+		err := openBrowserWith(url)
+		if c.expectedErr && err == nil {
+			t.Fatalf("Expected fail for OS %s, but it did not fail", c.GOOS)
+		}
+		if c.expectedApp != app {
+			t.Fatalf("Expected to run with app %s on OS %s, but it run on %s", c.expectedApp, c.GOOS, app)
+		}
 	}
 }
 
