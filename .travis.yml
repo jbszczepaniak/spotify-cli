@@ -4,8 +4,9 @@ go:
   - "1.8"
 
 env:
-  - SPOTIFY_CLIENT_ID=any
-  - SPOTIFY_SECRET=any
+  global:
+    - SPOTIFY_CLIENT_ID=any
+    - SPOTIFY_SECRET=any
 
 before_install:
   - go get -v github.com/marcusolsson/tui-go
