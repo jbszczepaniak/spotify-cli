@@ -1,7 +1,10 @@
 package main
 
-import "testing"
-import "github.com/zmb3/spotify"
+import (
+	"testing"
+
+	"github.com/zmb3/spotify"
+)
 
 func TestGetTrackRepr(t *testing.T) {
 	var tests = []struct {

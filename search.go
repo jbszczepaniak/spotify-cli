@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
-	"log"
 )
 
 type URIName struct {

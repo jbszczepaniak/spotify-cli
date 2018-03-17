@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/zmb3/spotify"
 	"testing"
+
+	"github.com/zmb3/spotify"
 )
 
 func TestFixturesForDebugMode(t *testing.T) {

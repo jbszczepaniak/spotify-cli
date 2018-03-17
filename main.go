@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/google/uuid"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
-	"log"
-	"os"
-	"strings"
 )
 
 type albumDescription struct {

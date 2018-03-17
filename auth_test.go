@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/zmb3/spotify"
-	"golang.org/x/oauth2"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/websocket"
+	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2"
 )
 
 func TestAuthenticateClient(t *testing.T) {

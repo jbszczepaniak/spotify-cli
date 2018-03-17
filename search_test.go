@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/marcusolsson/tui-go"
-	"github.com/zmb3/spotify"
 	"log"
 	"strings"
 	"testing"
+
+	"github.com/marcusolsson/tui-go"
+	"github.com/zmb3/spotify"
 )
 
 type FakePlayer struct {

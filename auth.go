@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/zmb3/spotify"
-	"golang.org/x/oauth2"
 	"html/template"
 	"io"
 	"log"
@@ -14,6 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/gorilla/websocket"
+	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2"
 )
 
 var auth = getSpotifyAuthenticator()
