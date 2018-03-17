@@ -205,6 +205,8 @@ func TestOpenBrowser(t *testing.T) {
 		if c.expectedErr && err == nil {
 			t.Fatalf("Expected fail for OS %s, but it did not fail", c.GOOS)
 		}
+		// Check only if real app name contains substring becasuse
+		// OS on which test is run will append /usr/bin
 		if err == nil && !strings.Contains(app, c.expectedApp) {
 			t.Fatalf("Expected to run with app %s on OS %s, but it run on %s", c.expectedApp, c.GOOS, app)
 		}
