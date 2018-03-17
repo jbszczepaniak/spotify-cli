@@ -189,7 +189,7 @@ func TestOpenBrowser(t *testing.T) {
 		},
 		{
 			GOOS:        "darwin",
-			expectedApp: "/usr/bin/open",
+			expectedApp: "open",
 			expectedErr: false,
 		},
 	}
@@ -205,7 +205,7 @@ func TestOpenBrowser(t *testing.T) {
 		if c.expectedErr && err == nil {
 			t.Fatalf("Expected fail for OS %s, but it did not fail", c.GOOS)
 		}
-		if c.expectedApp != app {
+		if err == nil && !strings.Contains(app, c.expectedApp) {
 			t.Fatalf("Expected to run with app %s on OS %s, but it run on %s", c.expectedApp, c.GOOS, app)
 		}
 	}
