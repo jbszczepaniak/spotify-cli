@@ -24,14 +24,8 @@ type search struct {
 	box        *tui.Box
 }
 
-func NewSearch(client SpotifyClient) *search {
-	searchedSongs := NewSearchResults(client, "Songs")
-	searchedAlbums := NewSearchResults(client, "Albums")
-	searchedArtists := NewSearchResults(client, "Artists")
-
-	searchInput := tui.NewEntry()
-	searchInput.SetSizePolicy(tui.Preferred, tui.Minimum)
-	searchInput.OnSubmit(func(entry *tui.Entry) {
+func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, searchedArtists *searchResults) func(*tui.Entry) {
+	return func(entry *tui.Entry) {
 		result, _ := client.Search(
 			entry.Text(),
 			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
@@ -52,7 +46,17 @@ func NewSearch(client SpotifyClient) *search {
 			searchedArtists.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
 		}
 
-	})
+	}
+}
+
+func NewSearch(client SpotifyClient) *search {
+	searchedSongs := NewSearchResults(client, "Songs")
+	searchedAlbums := NewSearchResults(client, "Albums")
+	searchedArtists := NewSearchResults(client, "Artists")
+
+	searchInput := tui.NewEntry()
+	searchInput.SetSizePolicy(tui.Preferred, tui.Minimum)
+	searchInput.OnSubmit(searchInputOnSubmit(client, searchedSongs, searchedAlbums, searchedArtists))
 
 	searchInputBox := tui.NewHBox(searchInput, tui.NewSpacer())
 	searchInputBox.SetTitle("Search")

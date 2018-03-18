@@ -11,6 +11,17 @@ import (
 	"github.com/zmb3/spotify"
 )
 
+func TestNewSearch(t *testing.T) {
+	client := &DebugClient{}
+	search := NewSearch(client)
+	if len(search.focusables) != 4 {
+		t.Fatalf("Expected to have 4 focusables elements, got %d", len(search.focusables))
+	}
+	if (search.box.Length()) != 2 {
+		t.Fatalf("Expected to have 2 elements in search box, got %d", search.box.Length())
+	}
+}
+
 type FakePlayer struct {
 	calls                     int
 	playOptErrCallWithURI     bool
