@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+
 	"os"
 	"os/exec"
 	"runtime"
@@ -36,10 +38,10 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 		envVars[key] = v
 	}
 
-	redirectURI := "http://localhost:8888/spotify-cli"
+	redirectURI := url.URL{Scheme: "http", Host: "localhost:8888", Path: "/spotify-cli"}
 
 	auth := spotify.NewAuthenticator(
-		redirectURI,
+		redirectURI.String(),
 		spotify.ScopeUserReadPrivate,
 		spotify.ScopeUserReadCurrentlyPlaying,
 		spotify.ScopeUserReadPlaybackState,

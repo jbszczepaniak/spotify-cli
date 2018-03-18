@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os/exec"
 	"strings"
 	"testing"
@@ -225,8 +226,8 @@ func TestWebSocketHandler(t *testing.T) {
 	h.HandleFunc("/ws", as.handleWebSocket)
 	go http.ListenAndServe(":8005", h)
 
-	// Connect to the server
-	ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:8005/ws", nil)
+	wsURI := url.URL{Scheme: "ws", Host: "localhost:8005", Path: "/ws"}
+	ws, _, err := websocket.DefaultDialer.Dial(wsURI.String(), nil)
 	if err != nil {
 		t.Fatalf("Unable to dial websocket with %#v", err)
 	}
