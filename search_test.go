@@ -78,9 +78,11 @@ func TestOnItemActivatedCallback(t *testing.T) {
 		}
 		client.Player = fakePlayer
 
-		results := NewSearchResults(client)
+		results := NewSearchResults(client, "Results")
+
 		results.table.AppendRow(tui.NewLabel("Name"))
 		results.data = append(results.data, "some:spotify:uri")
+
 		results.onItemActivatedCallback(results.table)
 
 		if !strings.HasSuffix(str.String(), c.expectedLogs) {
@@ -95,7 +97,7 @@ func TestOnItemActivatedCallback(t *testing.T) {
 
 func TestAppendRemoveSearchResults(t *testing.T) {
 	client := &DebugClient{}
-	results := NewSearchResults(client)
+	results := NewSearchResults(client, "Results")
 	testUriName := URIName{URI: "test:spotify:uri", Name: "Test Name"}
 
 	results.appendSearchResult(testUriName)

@@ -19,12 +19,62 @@ type searchResults struct {
 	onItemActivatedCallback func(*tui.Table) // Part of the struct in order to test it
 }
 
-func NewSearchResults(client SpotifyClient) *searchResults {
+type search struct {
+	focusables []tui.Widget
+	box        *tui.Box
+}
+
+func NewSearch(client SpotifyClient) *search {
+	searchedSongs := NewSearchResults(client, "Songs")
+	searchedAlbums := NewSearchResults(client, "Albums")
+	searchedArtists := NewSearchResults(client, "Artists")
+
+	searchInput := tui.NewEntry()
+	searchInput.SetSizePolicy(tui.Preferred, tui.Minimum)
+	searchInput.OnSubmit(func(entry *tui.Entry) {
+		result, _ := client.Search(
+			entry.Text(),
+			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
+		)
+
+		searchedAlbums.resetSearchResults()
+		for _, i := range result.Albums.Albums {
+			searchedAlbums.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
+		}
+
+		searchedSongs.resetSearchResults()
+		for _, i := range result.Tracks.Tracks {
+			searchedSongs.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
+		}
+
+		searchedArtists.resetSearchResults()
+		for _, i := range result.Artists.Artists {
+			searchedArtists.appendSearchResult(URIName{Name: i.Name, URI: i.URI})
+		}
+
+	})
+
+	searchInputBox := tui.NewHBox(searchInput, tui.NewSpacer())
+	searchInputBox.SetTitle("Search")
+	searchInputBox.SetBorder(true)
+
+	searchResults := tui.NewVBox(searchedSongs.box, searchedAlbums.box, searchedArtists.box)
+	searchResults.SetTitle("Search Results")
+	searchResults.SetBorder(true)
+
+	return &search{
+		focusables: []tui.Widget{searchInput, searchedSongs.table, searchedAlbums.table, searchedArtists.table},
+		box:        tui.NewVBox(searchInputBox, searchResults),
+	}
+
+}
+
+func NewSearchResults(client SpotifyClient, name string) *searchResults {
 	table := tui.NewTable(0, 0)
 	data := make([]spotify.URI, 0)
 	box := tui.NewVBox(table, tui.NewSpacer())
 
-	box.SetTitle("Songs")
+	box.SetTitle(name)
 	box.SetBorder(true)
 
 	results := &searchResults{
