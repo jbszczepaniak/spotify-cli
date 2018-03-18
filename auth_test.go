@@ -228,7 +228,7 @@ func TestWebSocketHandler(t *testing.T) {
 	// Connect to the server
 	ws, _, err := websocket.DefaultDialer.Dial("ws://0.0.0.0:8005/ws", nil)
 	if err != nil {
-		t.Fatal("Unable to dial websocket with %#v")
+		t.Fatalf("Unable to dial websocket with %#v", err)
 	}
 	expectedReadyDeviceId := "1jdjd8dj38djd09dfhjk"
 	msg := WebPlayBackState{DeviceReady: expectedReadyDeviceId}
