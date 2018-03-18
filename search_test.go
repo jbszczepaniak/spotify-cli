@@ -60,7 +60,6 @@ func TestSearchInputOnSubmit(t *testing.T) {
 	testEntry := tui.Entry{}
 	testEntry.SetText("Some search query")
 
-	// searchedSongs := NewSearchResults(client, "Songs")
 	searchedSongs := &FakeSearchResult{}
 	searchedAlbums := &FakeSearchResult{}
 	searchedArtists := &FakeSearchResult{}
