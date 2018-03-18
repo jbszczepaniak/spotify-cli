@@ -6,24 +6,35 @@ import (
 )
 
 func NewDebugClient() SpotifyClient {
-	return DebugClient{Player: &DebugPlayer{}}
+	return DebugClient{
+		Player:   &DebugPlayer{},
+		Searcher: &DebugSearcher{},
+	}
 }
 
 // DebugClient is a dummy struct used when running in debug mode
 type DebugClient struct {
 	Player
+	Searcher
 }
 
 type DebugPlayer struct{}
 
 // Play is a dummy implementation used when running in debug mode
-func (fc DebugPlayer) Play() error {
+func (dp DebugPlayer) Play() error {
 	return nil
 }
 
 // PlayOpt is a dummy implementation used when running in debug mode
-func (fc DebugPlayer) PlayOpt(opt *spotify.PlayOptions) error {
+func (dp DebugPlayer) PlayOpt(opt *spotify.PlayOptions) error {
 	return nil
+}
+
+type DebugSearcher struct{}
+
+// Search is a dummy implementation used when running in debug mode
+func (ds DebugSearcher) Search(query string, t spotify.SearchType) (*spotify.SearchResult, error) {
+	return nil, nil
 }
 
 var albumsArtistsData = []struct {
@@ -95,9 +106,4 @@ func (fc DebugClient) CurrentUser() (*spotify.PrivateUser, error) {
 // Token is a dummy implementation used when running in debug mode
 func (fc DebugClient) Token() (*oauth2.Token, error) {
 	return &oauth2.Token{}, nil
-}
-
-// Search is a dummy implementation used when running in debug mode
-func (fc DebugClient) Search(query string, t spotify.SearchType) (*spotify.SearchResult, error) {
-	return nil, nil
 }

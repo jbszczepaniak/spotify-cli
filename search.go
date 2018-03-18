@@ -12,21 +12,14 @@ type URIName struct {
 	Name string
 }
 
-type searchResults struct {
-	table                   *tui.Table
-	box                     *tui.Box
-	data                    []spotify.URI
-	onItemActivatedCallback func(*tui.Table) // Part of the struct in order to test it
-}
-
 type search struct {
 	focusables []tui.Widget
 	box        *tui.Box
 }
 
-func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, searchedArtists *searchResults) func(*tui.Entry) {
+func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, searchedArtists searchResultsInterface) func(*tui.Entry) {
 	return func(entry *tui.Entry) {
-		result, _ := client.Search(
+		result, _ := client.Search( // NO CO TY
 			entry.Text(),
 			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
 		)
@@ -62,18 +55,76 @@ func NewSearch(client SpotifyClient) *search {
 	searchInputBox.SetTitle("Search")
 	searchInputBox.SetBorder(true)
 
-	searchResults := tui.NewVBox(searchedSongs.box, searchedAlbums.box, searchedArtists.box)
+	searchResults := tui.NewVBox(searchedSongs.getBox(), searchedAlbums.getBox(), searchedArtists.getBox())
 	searchResults.SetTitle("Search Results")
 	searchResults.SetBorder(true)
 
 	return &search{
-		focusables: []tui.Widget{searchInput, searchedSongs.table, searchedAlbums.table, searchedArtists.table},
+		focusables: []tui.Widget{searchInput, searchedSongs.getTable(), searchedAlbums.getTable(), searchedArtists.getTable()},
 		box:        tui.NewVBox(searchInputBox, searchResults),
 	}
 
 }
 
-func NewSearchResults(client SpotifyClient, name string) *searchResults {
+type searchResults struct {
+	table *tui.Table
+	box   *tui.Box
+	data  []spotify.URI
+}
+
+type appendReseter interface {
+	appendSearchResult(URIName)
+	resetSearchResults()
+}
+
+type searchResultsInterface interface {
+	appendReseter
+	getBox() *tui.Box
+	getTable() *tui.Table
+	getData() []spotify.URI
+	onItemActivated(SpotifyClient) func(*tui.Table)
+}
+
+func (sr *searchResults) appendSearchResult(uriName URIName) {
+	sr.table.AppendRow(tui.NewLabel(uriName.Name))
+	sr.data = append(sr.data, uriName.URI)
+}
+
+func (sr *searchResults) resetSearchResults() {
+	sr.table.RemoveRows()
+	sr.data = sr.data[:0]
+}
+
+func (sr *searchResults) getBox() *tui.Box {
+	return sr.box
+}
+
+func (sr *searchResults) getTable() *tui.Table {
+	return sr.table
+}
+
+func (sr *searchResults) getData() []spotify.URI {
+	return sr.data
+}
+
+func (sr *searchResults) onItemActivated(client SpotifyClient) func(*tui.Table) {
+	return func(t *tui.Table) {
+		selectedRow := t.Selected()
+		trackURI := &sr.data[selectedRow]
+		err := client.PlayOpt(&spotify.PlayOptions{URIs: []spotify.URI{*trackURI}})
+		if err != nil {
+			err := client.PlayOpt(&spotify.PlayOptions{PlaybackContext: trackURI}) // Fallback to these if previous vall won't work parameters.
+			if err != nil {
+				log.Printf("Could not play searched URI: %s\n", *trackURI)
+				return
+			}
+		}
+		log.Printf("Successfuly played searched URI: %s\n", *trackURI)
+
+	}
+}
+
+func NewSearchResults(client SpotifyClient, name string) searchResultsInterface {
 	table := tui.NewTable(0, 0)
 	data := make([]spotify.URI, 0)
 	box := tui.NewVBox(table, tui.NewSpacer())
@@ -86,31 +137,6 @@ func NewSearchResults(client SpotifyClient, name string) *searchResults {
 		box:   box,
 		data:  data,
 	}
-
-	callback := func(t *tui.Table) {
-		selectedRow := t.Selected()
-		trackURI := &results.data[selectedRow]
-		err := client.PlayOpt(&spotify.PlayOptions{URIs: []spotify.URI{*trackURI}})
-		if err != nil {
-			err := client.PlayOpt(&spotify.PlayOptions{PlaybackContext: trackURI}) // Fallback to these if previous vall won't work parameters.
-			if err != nil {
-				log.Printf("Could not play searched URI: %s\n", *trackURI)
-				return
-			}
-		}
-		log.Printf("Successfuly played searched URI: %s\n", *trackURI)
-	}
-	table.OnItemActivated(callback)
-	results.onItemActivatedCallback = callback
+	table.OnItemActivated(results.onItemActivated(client))
 	return results
-}
-
-func (sr *searchResults) appendSearchResult(uriName URIName) {
-	sr.table.AppendRow(tui.NewLabel(uriName.Name))
-	sr.data = append(sr.data, uriName.URI)
-}
-
-func (sr *searchResults) resetSearchResults() {
-	sr.table.RemoveRows()
-	sr.data = sr.data[:0]
 }

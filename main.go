@@ -62,6 +62,7 @@ func checkMode() {
 type SpotifyClient interface {
 	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
 	Player
+	Searcher
 	Pause() error
 	Previous() error
 	Next() error
@@ -70,12 +71,15 @@ type SpotifyClient interface {
 	TransferPlayback(spotify.ID, bool) error
 	CurrentUser() (*spotify.PrivateUser, error)
 	Token() (*oauth2.Token, error)
-	Search(query string, t spotify.SearchType) (*spotify.SearchResult, error)
 }
 
 type Player interface {
 	Play() error
 	PlayOpt(opt *spotify.PlayOptions) error
+}
+
+type Searcher interface {
+	Search(string, spotify.SearchType) (*spotify.SearchResult, error)
 }
 
 func main() {
