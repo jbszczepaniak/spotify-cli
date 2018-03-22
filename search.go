@@ -19,10 +19,13 @@ type search struct {
 
 func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, searchedArtists searchResultsInterface) func(*tui.Entry) {
 	return func(entry *tui.Entry) {
-		result, _ := client.Search( // NO CO TY
+		result, err := client.Search(
 			entry.Text(),
 			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
 		)
+		if err != nil {
+			log.Fatalf("could not search for %s, %s", entry, err)
+		}
 
 		searchedAlbums.resetSearchResults()
 		for _, i := range result.Albums.Albums {
