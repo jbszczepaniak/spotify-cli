@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
@@ -58,10 +60,11 @@ func main() {
 
 	var client SpotifyClient
 	as := appState{
-		client:         make(chan *spotify.Client),
-		playerShutdown: make(chan bool),
-		playerDeviceId: make(chan spotify.ID),
-		state:          uuid.New().String(),
+		client:            make(chan *spotify.Client),
+		playerShutdown:    make(chan bool),
+		playerDeviceId:    make(chan spotify.ID),
+		state:             uuid.New().String(),
+		playerStateChange: make(chan *WebPlaybackState),
 	}
 
 	if debugMode {
@@ -112,7 +115,15 @@ func main() {
 		return
 	})
 
+	go func() {
+		for {
+			time.Sleep(500 * time.Millisecond)
+			ui.Update(func() {})
+		}
+	}()
+
 	if err := ui.Run(); err != nil {
 		panic(err)
 	}
+
 }

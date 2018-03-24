@@ -17,10 +17,10 @@ func TestGetTrackRepr(t *testing.T) {
 					Name:    "Name",
 					Artists: []spotify.SimpleArtist{{Name: "art1"}, {Name: "art2"}},
 				},
-				spotify.SimpleAlbum{},
+				spotify.SimpleAlbum{Name: "alb"},
 				nil,
 				0,
-			}, "Name (art1, art2)",
+			}, "Name\nalb\nart1",
 		},
 		{
 			&spotify.FullTrack{
@@ -28,10 +28,10 @@ func TestGetTrackRepr(t *testing.T) {
 					Name:    "Name",
 					Artists: []spotify.SimpleArtist{{Name: "art"}},
 				},
-				spotify.SimpleAlbum{},
+				spotify.SimpleAlbum{Name: "alb"},
 				nil,
 				0,
-			}, "Name (art)",
+			}, "Name\nalb\nart",
 		},
 	}
 	for _, test := range tests {

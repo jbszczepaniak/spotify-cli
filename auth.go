@@ -57,10 +57,11 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 }
 
 type appState struct {
-	client         chan *spotify.Client
-	playerShutdown chan bool
-	playerDeviceId chan spotify.ID
-	state          string
+	client            chan *spotify.Client
+	playerShutdown    chan bool
+	playerDeviceId    chan spotify.ID
+	playerStateChange chan *WebPlaybackState // currently playing
+	state             string
 }
 
 // authenticate authenticate user with Sotify API
@@ -83,7 +84,9 @@ func authenticate(as appState) (SpotifyClient, error) {
 func (s *appState) authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(s.state, r)
 	if err != nil {
-		http.Error(w, "Couldn't get token", http.StatusNotFound)
+		errMsg := fmt.Sprintf("Could not get token, error: %v", err)
+		http.Error(w, errMsg, http.StatusNotFound)
+		log.Print(errMsg)
 		return
 	}
 
@@ -95,7 +98,9 @@ func (s *appState) authCallback(w http.ResponseWriter, r *http.Request) {
 	playbackPage, err := insertTokenToTemplate(token.AccessToken, t)
 
 	if err != nil {
-		http.Error(w, "Couldn't get token", http.StatusNotFound)
+		errMsg := fmt.Sprintf("Could not get token, error: %v", err)
+		http.Error(w, errMsg, http.StatusNotFound)
+		log.Print(errMsg)
 		return
 	}
 
@@ -107,8 +112,14 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type WebPlayBackState struct {
-	DeviceReady string
+type WebPlaybackReadyDevice struct {
+	DeviceId string
+}
+
+type WebPlaybackState struct {
+	CurrentTrackName  string
+	CurrentAlbumName  string
+	CurrentArtistName string
 }
 
 func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -118,13 +129,26 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var v WebPlayBackState
+	var v WebPlaybackReadyDevice
 	_, message, err := conn.ReadMessage()
 	err = json.Unmarshal(message, &v)
-	s.playerDeviceId <- spotify.ID(v.DeviceReady)
+	s.playerDeviceId <- spotify.ID(v.DeviceId)
+
+	go func() {
+		for {
+			var y WebPlaybackState
+			_, message, err = conn.ReadMessage()
+			err = json.Unmarshal(message, &y)
+			if err != nil {
+				log.Printf("Could not Unmarshall message: %s, err: %s", message, err)
+			}
+			s.playerStateChange <- &y
+		}
+	}()
 
 	<-s.playerShutdown
 	conn.WriteJSON("{\"close\": true}")
+
 }
 
 var runtimeGOOS = runtime.GOOS

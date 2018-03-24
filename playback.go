@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
+	"time"
 
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
@@ -31,9 +31,24 @@ type playback struct {
 
 func NewPlayback(client SpotifyClient, as appState) currentlyPlaying {
 	currentlyPlayingLabel := tui.NewLabel("")
+	go func() {
+		for {
+			currentState := <-as.playerStateChange
+			labelText := fmt.Sprintf(
+				"%s\n%s\n%s",
+				currentState.CurrentTrackName,
+				currentState.CurrentAlbumName,
+				currentState.CurrentArtistName,
+			)
+			currentlyPlayingLabel.SetText(labelText)
+		}
+	}()
 
 	updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
-	availableDevicesTable, _ := createAvailableDevicesTable(as, client)
+	availableDevicesTable, err := createAvailableDevicesTable(as, client)
+	if err != nil {
+		log.Fatalf("err occured: %v", err)
+	}
 
 	playbackButtons := createPlaybackButtons(client, currentlyPlayingLabel)
 
@@ -66,8 +81,9 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	nextButton := tui.NewButton("[ ►| Next ]")
 
 	playButton.OnActivated(func(btn *tui.Button) {
-		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 		client.Play()
+		time.Sleep(time.Millisecond * 500)
+		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 	})
 
 	stopButton.OnActivated(func(*tui.Button) {
@@ -75,13 +91,15 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	})
 
 	previousButton.OnActivated(func(*tui.Button) {
-		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 		client.Previous()
+		time.Sleep(time.Millisecond * 500)
+		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 	})
 
 	nextButton.OnActivated(func(*tui.Button) {
-		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 		client.Next()
+		time.Sleep(time.Millisecond * 500)
+		updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
 	})
 
 	buttons := tui.NewHBox(
@@ -106,7 +124,7 @@ func createAvailableDevicesTable(state appState, client SpotifyClient) (*devices
 	SDKplayerID := <-state.playerDeviceId
 	err := transferPlaybackToDevice(client, SDKplayerID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not transfer playback to device %s, err: %v", SDKplayerID, err)
 	}
 
 	table := tui.NewTable(0, 0)
@@ -149,9 +167,10 @@ func transferPlaybackToDevice(client SpotifyClient, id spotify.ID) error {
 }
 
 func getTrackRepr(track *spotify.FullTrack) string {
-	var artistsNames []string
-	for _, artist := range track.Artists {
-		artistsNames = append(artistsNames, artist.Name)
-	}
-	return fmt.Sprintf("%v (%v)", track.Name, strings.Join(artistsNames, ", "))
+	return fmt.Sprintf(
+		"%s\n%s\n%s",
+		track.Name,
+		track.Album.Name,
+		track.Artists[0].Name,
+	)
 }

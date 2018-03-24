@@ -232,7 +232,8 @@ func TestWebSocketHandler(t *testing.T) {
 		t.Fatalf("Unable to dial websocket with %#v", err)
 	}
 	expectedReadyDeviceId := "1jdjd8dj38djd09dfhjk"
-	msg := WebPlayBackState{DeviceReady: expectedReadyDeviceId}
+
+	msg := WebPlaybackReadyDevice{DeviceId: expectedReadyDeviceId}
 	b, _ := json.Marshal(msg)
 	ws.WriteMessage(websocket.TextMessage, b)
 

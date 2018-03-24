@@ -31,11 +31,28 @@
       player.addListener('playback_error', ({ message }) => { console.error(message); });
 
       // Playback status updates
-      player.addListener('player_state_changed', state => { console.log(state); });
+      player.addListener('player_state_changed', state => {
+        stateUpdate = {};
+        const currentTrackName = state.track_window.current_track.name;
+        if (currentTrackName !== undefined) {
+          stateUpdate['CurrentTrackName'] = currentTrackName;
+        }
+        const currentAlbumName = state.track_window.current_track.album.name;
+        if (currentAlbumName !== undefined) {
+          stateUpdate['CurrentAlbumName'] = currentAlbumName;
+        }
+        const currentArtistName = state.track_window.current_track.artists[0].name;
+        if (currentArtistName !== undefined) {
+          stateUpdate['CurrentArtistName'] = currentArtistName;
+        }
+        conn.send(JSON.stringify(stateUpdate));
+        console.log(state);
+      });
 
       // Ready
       player.addListener('ready', ({ device_id }) => {
-        conn.send(JSON.stringify({"DeviceReady": device_id}))
+        console.log("Device ready: ", device_id)
+        conn.send(JSON.stringify({"DeviceId": device_id}))
       });
 
       // Connect to the player!
