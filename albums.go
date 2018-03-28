@@ -12,32 +12,52 @@ type albumDescription struct {
 	title  string
 }
 
-func NewSideBar(client SpotifyClient) (tui.Widget, error) {
-	spotifyAlbums, err := client.CurrentUsersAlbums()
+type sideBar struct {
+	albums *albums
+	box    *tui.Box
+}
+
+func NewSideBar(client SpotifyClient) (*sideBar, error) {
+	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &visibleUserAlbumsCount})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
 	}
-	albumsList := renderAlbumsTable(spotifyAlbums)
-	albumsList.SetSizePolicy(tui.Minimum, tui.Preferred)
-	return tui.NewHBox(tui.NewVBox(albumsList, tui.NewSpacer()), tui.NewSpacer()), nil
+	userAlbums := make([]spotify.SavedAlbum, 0)
+	userAlbums = append(userAlbums, initialPage.Albums...)
+
+	offset := 25
+	page := initialPage
+	for page.Offset < initialPage.Total {
+		page, err = client.CurrentUsersAlbumsOpt(&spotify.Options{
+			Limit:  &initialPage.Limit,
+			Offset: &offset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
+		}
+		offset += 25
+		userAlbums = append(userAlbums, page.Albums...)
+	}
+	albumsList := renderAlbumsTable(userAlbums, client)
+	box := tui.NewHBox(albumsList.box, tui.NewVBox(tui.NewSpacer()), tui.NewSpacer())
+	return &sideBar{albums: albumsList, box: box}, nil
 }
 
-func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
-	albumsDescriptions := make([]albumDescription, 0)
-	for _, album := range albumsPage.Albums {
-		albumsDescriptions = append(albumsDescriptions, albumDescription{album.Name, album.Artists[0].Name})
-	}
-	albumsList := tui.NewTable(0, 0)
-	albumsList.SetColumnStretch(0, 1)
-	albumsList.SetColumnStretch(1, 1)
-	albumsList.SetColumnStretch(2, 4)
+type albums struct {
+	table *tui.Table
+	box   *tui.Box
+	data  []spotify.URI
+}
 
+var visibleUserAlbumsCount = 25
+
+func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
 	albumsList.AppendRow(
 		tui.NewLabel("Title"),
 		tui.NewLabel("Artist"),
 	)
 	colLength := 20
-	for _, album := range albumsDescriptions {
+	for _, album := range albumsDescriptions[start:end] {
 		var artistRow, albumRow *tui.Label
 		if len(album.artist) > colLength {
 			artistRow = tui.NewLabel(album.artist[:colLength] + "...")
@@ -53,8 +73,34 @@ func renderAlbumsTable(albumsPage *spotify.SavedAlbumPage) *tui.Box {
 
 		albumsList.AppendRow(artistRow, albumRow)
 	}
+}
+
+func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *albums {
+
+	currDataIdx := 0
+	albumsDescriptions := make([]albumDescription, 0)
+	data := make([]spotify.URI, 0)
+	for _, album := range savedAlbums {
+		albumsDescriptions = append(albumsDescriptions, albumDescription{album.Name, album.Artists[0].Name})
+		data = append(data, album.URI)
+	}
+
+	albumsList := tui.NewTable(0, 0)
+	albumsList.SetColumnStretch(0, 1)
+	albumsList.SetColumnStretch(1, 1)
+	albumsList.SetColumnStretch(2, 4)
+
+	renderAlbumListPage(albumsList, albumsDescriptions, 0, 25)
+
+	albumsList.OnSelectionChanged(func(t *tui.Table) {
+		currDataIdx = t.Selected() - 1
+	})
+
+	albumsList.OnItemActivated(func(t *tui.Table) {
+		client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &data[currDataIdx]})
+	})
 	albumListBox := tui.NewVBox(albumsList)
 	albumListBox.SetBorder(true)
 	albumListBox.SetTitle("User albums")
-	return albumListBox
+	return &albums{box: albumListBox, table: albumsList}
 }

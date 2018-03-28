@@ -19,8 +19,8 @@ func TestFixturesForDebugMode(t *testing.T) {
 		t.Errorf("Expected not to return error, but got %v", err)
 	}
 
-	albumsPage, err := debugClient.CurrentUsersAlbums()
-	expectedAlbumsCount := len(albumsArtistsData)
+	albumsPage, err := debugClient.CurrentUsersAlbumsOpt(&spotify.Options{})
+	expectedAlbumsCount := visibleUserAlbumsCount
 	if len(albumsPage.Albums) != expectedAlbumsCount {
 		t.Errorf("Expected to have %d fake albums, have %d", expectedAlbumsCount, len(albumsPage.Albums))
 	}

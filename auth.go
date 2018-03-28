@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"os"
 	"os/exec"
@@ -135,7 +136,7 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	s.playerDeviceId <- spotify.ID(v.DeviceId)
 
 	go func() {
-		for {
+		for range time.Tick(500 * time.Millisecond) {
 			var y WebPlaybackState
 			_, message, err = conn.ReadMessage()
 			err = json.Unmarshal(message, &y)

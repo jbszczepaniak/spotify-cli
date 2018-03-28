@@ -29,7 +29,7 @@ func checkMode() {
 // SpotifyClient is a wrapper interface around spotify.client
 // used in order to improve testability of the code.
 type SpotifyClient interface {
-	CurrentUsersAlbums() (*spotify.SavedAlbumPage, error)
+	CurrentUsersAlbumsOpt(opt *spotify.Options) (*spotify.SavedAlbumPage, error)
 	Player
 	Searcher
 	Pause() error
@@ -52,6 +52,7 @@ type Searcher interface {
 }
 
 func main() {
+	log.SetFlags(log.Lshortfile)
 	f, _ := os.Create("log.txt")
 	defer f.Close()
 	log.SetOutput(f)
@@ -91,11 +92,15 @@ func main() {
 	)
 	mainFrame.SetSizePolicy(tui.Expanding, tui.Expanding)
 
-	window := tui.NewHBox(sidebar, mainFrame)
+	window := tui.NewHBox(
+		sidebar.box,
+		mainFrame,
+	)
 	window.SetTitle("SPOTIFY CLI")
 
 	playBackButtons := []tui.Widget{playback.playback.previous, playback.playback.play, playback.playback.stop, playback.playback.next}
-	focusables := append(playBackButtons, search.focusables...)
+	focusables := append(playBackButtons, sidebar.albums.table)
+	focusables = append(focusables, search.focusables...)
 	focusables = append(focusables, playback.devices.table)
 
 	tui.DefaultFocusChain.Set(focusables...)
@@ -116,8 +121,7 @@ func main() {
 	})
 
 	go func() {
-		for {
-			time.Sleep(500 * time.Millisecond)
+		for range time.Tick(500 * time.Millisecond) {
 			ui.Update(func() {})
 		}
 	}()

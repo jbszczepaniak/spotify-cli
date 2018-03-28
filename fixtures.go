@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 )
@@ -37,25 +39,13 @@ func (ds DebugSearcher) Search(query string, t spotify.SearchType) (*spotify.Sea
 	return nil, nil
 }
 
-var albumsArtistsData = []struct {
-	AlbumName  string
-	ArtistName string
-}{
-	{"Interstellar", "Hans Zimmer"},
-	{"Tubular Bells", "Mike Oldfield"},
-	{"A Humdrum Star(Deluxe)", "GoGo Penguin"},
-	{"Timeline", "Yellowjackets"},
-	{"Floa", "Mammal Hands"},
-	{"groundUP", "Snarky Puppy"},
-}
-
 // CurrentUsersAlbums is a dummy implementation used when running in debug mode
-func (fc DebugClient) CurrentUsersAlbums() (*spotify.SavedAlbumPage, error) {
+func (fc DebugClient) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
 	fakedAlbums := make([]spotify.SavedAlbum, 0)
-	for _, albumArtist := range albumsArtistsData {
+	for i := 1; i <= visibleUserAlbumsCount; i++ {
 		album := spotify.SavedAlbum{}
-		album.Name = albumArtist.AlbumName
-		album.Artists = []spotify.SimpleArtist{spotify.SimpleArtist{Name: albumArtist.ArtistName}}
+		album.Name = fmt.Sprintf("Album Name %d", i)
+		album.Artists = []spotify.SimpleArtist{spotify.SimpleArtist{Name: fmt.Sprintf("Artist Name %d", i)}}
 		fakedAlbums = append(fakedAlbums, album)
 	}
 	return &spotify.SavedAlbumPage{
@@ -80,7 +70,11 @@ func (fc DebugClient) Next() error {
 
 // PlayerCurrentlyPlaying is a dummy implementation used when running in debug mode
 func (fc DebugClient) PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error) {
-	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{SimpleTrack: spotify.SimpleTrack{Name: "Currently Playing Song"}}}, nil
+	return &spotify.CurrentlyPlaying{Item: &spotify.FullTrack{SimpleTrack: spotify.SimpleTrack{
+		Name:    "Currently Playing Song",
+		Artists: []spotify.SimpleArtist{{Name: "Currently Playing Artist"}}},
+		Album: spotify.SimpleAlbum{Name: "Currently Playing Album"}},
+	}, nil
 }
 
 // PlayerDevices is a dummy implementation used when running in debug mode
