@@ -126,5 +126,6 @@ func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *
 	albumListBox := tui.NewVBox(albumsList, tui.NewSpacer())
 	albumListBox.SetBorder(true)
 	albumListBox.SetTitle("User albums")
+	albumListBox.SetSizePolicy(tui.Preferred, tui.Expanding)
 	return &albums{box: albumListBox, table: albumsList}
 }
