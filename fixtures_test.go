@@ -20,7 +20,7 @@ func TestFixturesForDebugMode(t *testing.T) {
 	}
 
 	albumsPage, err := debugClient.CurrentUsersAlbumsOpt(&spotify.Options{})
-	expectedAlbumsCount := visibleUserAlbumsCount
+	expectedAlbumsCount := 135 // 3*pageSize
 	if len(albumsPage.Albums) != expectedAlbumsCount {
 		t.Errorf("Expected to have %d fake albums, have %d", expectedAlbumsCount, len(albumsPage.Albums))
 	}

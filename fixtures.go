@@ -42,7 +42,7 @@ func (ds DebugSearcher) Search(query string, t spotify.SearchType) (*spotify.Sea
 // CurrentUsersAlbums is a dummy implementation used when running in debug mode
 func (fc DebugClient) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
 	fakedAlbums := make([]spotify.SavedAlbum, 0)
-	for i := 1; i <= visibleUserAlbumsCount; i++ {
+	for i := 1; i <= albumsPageSize*3; i++ {
 		album := spotify.SavedAlbum{}
 		album.Name = fmt.Sprintf("Album Name %d", i)
 		album.Artists = []spotify.SimpleArtist{spotify.SimpleArtist{Name: fmt.Sprintf("Artist Name %d", i)}}

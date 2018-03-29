@@ -18,7 +18,7 @@ type sideBar struct {
 }
 
 func NewSideBar(client SpotifyClient) (*sideBar, error) {
-	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &visibleUserAlbumsCount})
+	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &albumsPageSize})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
 	}
@@ -39,7 +39,7 @@ func NewSideBar(client SpotifyClient) (*sideBar, error) {
 		userAlbums = append(userAlbums, page.Albums...)
 	}
 	albumsList := renderAlbumsTable(userAlbums, client)
-	box := tui.NewHBox(albumsList.box, tui.NewVBox(tui.NewSpacer()), tui.NewSpacer())
+	box := tui.NewHBox(albumsList.box, tui.NewSpacer())
 	return &sideBar{albums: albumsList, box: box}, nil
 }
 
@@ -49,7 +49,7 @@ type albums struct {
 	data  []spotify.URI
 }
 
-var visibleUserAlbumsCount = 25
+var albumsPageSize = 45
 
 func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
 	albumsList.AppendRow(
@@ -76,8 +76,9 @@ func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescri
 }
 
 func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *albums {
-
+	lastTwoSelected := []int{-1, -1}
 	currDataIdx := 0
+
 	albumsDescriptions := make([]albumDescription, 0)
 	data := make([]spotify.URI, 0)
 	for _, album := range savedAlbums {
@@ -90,16 +91,39 @@ func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *
 	albumsList.SetColumnStretch(1, 1)
 	albumsList.SetColumnStretch(2, 4)
 
-	renderAlbumListPage(albumsList, albumsDescriptions, 0, 25)
+	renderAlbumListPage(albumsList, albumsDescriptions, 0, albumsPageSize)
 
 	albumsList.OnSelectionChanged(func(t *tui.Table) {
-		currDataIdx = t.Selected() - 1
+		if lastTwoSelected[0] == albumsPageSize-1 && lastTwoSelected[1] == albumsPageSize {
+			t.RemoveRows()
+			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/albumsPageSize)*albumsPageSize, (currDataIdx/albumsPageSize)*albumsPageSize+albumsPageSize)
+			lastTwoSelected = []int{-1, -1}
+			t.Select(1)
+			return
+		}
+		if lastTwoSelected[1] == 1 && t.Selected() == 0 && currDataIdx >= albumsPageSize {
+			t.RemoveRows()
+
+			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/albumsPageSize)*albumsPageSize-albumsPageSize, (currDataIdx/albumsPageSize)*albumsPageSize)
+			lastTwoSelected = []int{albumsPageSize + 2, albumsPageSize + 1}
+			t.Select(albumsPageSize)
+			return
+		}
+
+		lastTwoSelected[0] = lastTwoSelected[1]
+		lastTwoSelected[1] = t.Selected()
+		if lastTwoSelected[0] > lastTwoSelected[1] {
+			currDataIdx--
+		}
+		if lastTwoSelected[0] < lastTwoSelected[1] {
+			currDataIdx++
+		}
 	})
 
 	albumsList.OnItemActivated(func(t *tui.Table) {
-		client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &data[currDataIdx]})
+		client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &data[currDataIdx-1]})
 	})
-	albumListBox := tui.NewVBox(albumsList)
+	albumListBox := tui.NewVBox(albumsList, tui.NewSpacer())
 	albumListBox.SetBorder(true)
 	albumListBox.SetTitle("User albums")
 	return &albums{box: albumListBox, table: albumsList}
