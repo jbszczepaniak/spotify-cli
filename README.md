@@ -5,6 +5,8 @@
 
 Spotify Client which runs in the terminal.
 
+![screenshot](screen_shot.png)
+
 ## Getting Started
 
 ### Prerequisites
