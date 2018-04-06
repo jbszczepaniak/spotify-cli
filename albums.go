@@ -23,32 +23,43 @@ type albums struct {
 	data  []spotify.URI
 }
 
-var albumsPageSize = 45
+var (
+	visibleAlbums      = 45
+	spotifyAPIPageSize = 25
+	uiColumnWidth      = 20
+)
 
-var NewSideBar = func(client SpotifyClient) (*sideBar, error) {
-	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &albumsPageSize})
+func NewSideBar(client SpotifyClient) (*sideBar, error) {
+	userAlbums, err := getUserAlbums(client)
+	if err != nil {
+		return nil, err
+	}
+	albumsList := renderAlbumsTable(userAlbums, client)
+	box := tui.NewHBox(albumsList.box, tui.NewSpacer())
+	return &sideBar{albums: albumsList, box: box}, nil
+}
+
+func getUserAlbums(client SpotifyClient) ([]spotify.SavedAlbum, error) {
+	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
 	}
 	userAlbums := make([]spotify.SavedAlbum, 0)
 	userAlbums = append(userAlbums, initialPage.Albums...)
 
-	offset := 25
 	page := initialPage
 	for page.Offset < initialPage.Total {
 		page, err = client.CurrentUsersAlbumsOpt(&spotify.Options{
 			Limit:  &initialPage.Limit,
-			Offset: &offset,
+			Offset: &spotifyAPIPageSize,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
 		}
-		offset += 25
+		spotifyAPIPageSize += 25
 		userAlbums = append(userAlbums, page.Albums...)
 	}
-	albumsList := renderAlbumsTable(userAlbums, client)
-	box := tui.NewHBox(albumsList.box, tui.NewSpacer())
-	return &sideBar{albums: albumsList, box: box}, nil
+	return userAlbums, nil
 }
 
 func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
@@ -56,11 +67,10 @@ func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescri
 		tui.NewLabel("Title"),
 		tui.NewLabel("Artist"),
 	)
-	colLength := 20
 	for _, album := range albumsDescriptions[start:end] {
 		albumsList.AppendRow(
-			tui.NewLabel(trimWithCommasIfTooLong(album.artist, colLength)),
-			tui.NewLabel(trimWithCommasIfTooLong(album.title, colLength)),
+			tui.NewLabel(trimWithCommasIfTooLong(album.artist, uiColumnWidth)),
+			tui.NewLabel(trimWithCommasIfTooLong(album.title, uiColumnWidth)),
 		)
 	}
 }
@@ -88,22 +98,22 @@ func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *
 	albumsList.SetColumnStretch(1, 1)
 	albumsList.SetColumnStretch(2, 4)
 
-	renderAlbumListPage(albumsList, albumsDescriptions, 0, albumsPageSize)
+	renderAlbumListPage(albumsList, albumsDescriptions, 0, visibleAlbums)
 
 	albumsList.OnSelectionChanged(func(t *tui.Table) {
-		if lastTwoSelected[0] == albumsPageSize-1 && lastTwoSelected[1] == albumsPageSize {
+		if lastTwoSelected[0] == visibleAlbums-1 && lastTwoSelected[1] == visibleAlbums {
 			t.RemoveRows()
-			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/albumsPageSize)*albumsPageSize, (currDataIdx/albumsPageSize)*albumsPageSize+albumsPageSize)
+			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/visibleAlbums)*visibleAlbums, (currDataIdx/visibleAlbums)*visibleAlbums+visibleAlbums)
 			lastTwoSelected = []int{-1, -1}
 			t.Select(1)
 			return
 		}
-		if lastTwoSelected[1] == 1 && t.Selected() == 0 && currDataIdx >= albumsPageSize {
+		if lastTwoSelected[1] == 1 && t.Selected() == 0 && currDataIdx >= visibleAlbums {
 			t.RemoveRows()
 
-			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/albumsPageSize)*albumsPageSize-albumsPageSize, (currDataIdx/albumsPageSize)*albumsPageSize)
-			lastTwoSelected = []int{albumsPageSize + 2, albumsPageSize + 1}
-			t.Select(albumsPageSize)
+			renderAlbumListPage(t, albumsDescriptions, (currDataIdx/visibleAlbums)*visibleAlbums-visibleAlbums, (currDataIdx/visibleAlbums)*visibleAlbums)
+			lastTwoSelected = []int{visibleAlbums + 2, visibleAlbums + 1}
+			t.Select(visibleAlbums)
 			return
 		}
 
