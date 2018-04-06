@@ -17,7 +17,15 @@ type sideBar struct {
 	box    *tui.Box
 }
 
-func NewSideBar(client SpotifyClient) (*sideBar, error) {
+type albums struct {
+	table *tui.Table
+	box   *tui.Box
+	data  []spotify.URI
+}
+
+var albumsPageSize = 45
+
+var NewSideBar = func(client SpotifyClient) (*sideBar, error) {
 	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &albumsPageSize})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
@@ -43,14 +51,6 @@ func NewSideBar(client SpotifyClient) (*sideBar, error) {
 	return &sideBar{albums: albumsList, box: box}, nil
 }
 
-type albums struct {
-	table *tui.Table
-	box   *tui.Box
-	data  []spotify.URI
-}
-
-var albumsPageSize = 45
-
 func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
 	albumsList.AppendRow(
 		tui.NewLabel("Title"),
@@ -58,21 +58,18 @@ func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescri
 	)
 	colLength := 20
 	for _, album := range albumsDescriptions[start:end] {
-		var artistRow, albumRow *tui.Label
-		if len(album.artist) > colLength {
-			artistRow = tui.NewLabel(album.artist[:colLength] + "...")
-		} else {
-			artistRow = tui.NewLabel(album.artist)
-		}
-
-		if len(album.title) > colLength {
-			albumRow = tui.NewLabel(album.title[:colLength] + "...")
-		} else {
-			albumRow = tui.NewLabel(album.title)
-		}
-
-		albumsList.AppendRow(artistRow, albumRow)
+		albumsList.AppendRow(
+			tui.NewLabel(trimWithCommasIfTooLong(album.artist, colLength)),
+			tui.NewLabel(trimWithCommasIfTooLong(album.title, colLength)),
+		)
 	}
+}
+
+func trimWithCommasIfTooLong(text string, maxLength int) string {
+	if len(text) > maxLength {
+		text = text[:maxLength] + "..."
+	}
+	return text
 }
 
 func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *albums {
@@ -112,6 +109,7 @@ func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *
 
 		lastTwoSelected[0] = lastTwoSelected[1]
 		lastTwoSelected[1] = t.Selected()
+
 		if lastTwoSelected[0] > lastTwoSelected[1] {
 			currDataIdx--
 		}
