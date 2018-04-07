@@ -24,65 +24,23 @@ type albums struct {
 }
 
 var (
-	visibleAlbums      = 45
-	spotifyAPIPageSize = 25
-	uiColumnWidth      = 20
+	visibleAlbums        = 45
+	spotifyAPIPageSize   = 25
+	spotifyAPIPageOffset = 25
+	uiColumnWidth        = 20
 )
 
 func NewSideBar(client SpotifyClient) (*sideBar, error) {
-	userAlbums, err := getUserAlbums(client)
-	if err != nil {
-		return nil, err
-	}
-	albumsList := renderAlbumsTable(userAlbums, client)
+	albumsList := renderAlbumsTable(client)
 	box := tui.NewHBox(albumsList.box, tui.NewSpacer())
 	return &sideBar{albums: albumsList, box: box}, nil
 }
 
-func getUserAlbums(client SpotifyClient) ([]spotify.SavedAlbum, error) {
-	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
-	}
-	userAlbums := make([]spotify.SavedAlbum, 0)
-	userAlbums = append(userAlbums, initialPage.Albums...)
-
-	page := initialPage
-	for page.Offset < initialPage.Total {
-		page, err = client.CurrentUsersAlbumsOpt(&spotify.Options{
-			Limit:  &initialPage.Limit,
-			Offset: &spotifyAPIPageSize,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
-		}
-		spotifyAPIPageSize += 25
-		userAlbums = append(userAlbums, page.Albums...)
-	}
-	return userAlbums, nil
-}
-
-func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
-	albumsList.AppendRow(
-		tui.NewLabel("Title"),
-		tui.NewLabel("Artist"),
-	)
-	for _, album := range albumsDescriptions[start:end] {
-		albumsList.AppendRow(
-			tui.NewLabel(trimWithCommasIfTooLong(album.artist, uiColumnWidth)),
-			tui.NewLabel(trimWithCommasIfTooLong(album.title, uiColumnWidth)),
-		)
-	}
-}
-
-func trimWithCommasIfTooLong(text string, maxLength int) string {
-	if len(text) > maxLength {
-		text = text[:maxLength] + "..."
-	}
-	return text
-}
-
-func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *albums {
+func renderAlbumsTable(client SpotifyClient) *albums {
+	savedAlbums, _ := getUserAlbums(client)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	lastTwoSelected := []int{-1, -1}
 	currDataIdx := 0
 
@@ -136,4 +94,47 @@ func renderAlbumsTable(savedAlbums []spotify.SavedAlbum, client SpotifyClient) *
 	albumListBox.SetTitle("User albums")
 	albumListBox.SetSizePolicy(tui.Preferred, tui.Expanding)
 	return &albums{box: albumListBox, table: albumsList}
+}
+
+func getUserAlbums(client SpotifyClient) ([]spotify.SavedAlbum, error) {
+	initialPage, err := client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
+	}
+	userAlbums := make([]spotify.SavedAlbum, 0)
+	userAlbums = append(userAlbums, initialPage.Albums...)
+
+	page := initialPage
+	for page.Offset < initialPage.Total {
+		page, err = client.CurrentUsersAlbumsOpt(&spotify.Options{
+			Limit:  &initialPage.Limit,
+			Offset: &spotifyAPIPageOffset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
+		}
+		spotifyAPIPageOffset += spotifyAPIPageSize
+		userAlbums = append(userAlbums, page.Albums...)
+	}
+	return userAlbums, nil
+}
+
+func renderAlbumListPage(albumsList *tui.Table, albumsDescriptions []albumDescription, start, end int) {
+	albumsList.AppendRow(
+		tui.NewLabel("Title"),
+		tui.NewLabel("Artist"),
+	)
+	for _, album := range albumsDescriptions[start:end] {
+		albumsList.AppendRow(
+			tui.NewLabel(trimWithCommasIfTooLong(album.artist, uiColumnWidth)),
+			tui.NewLabel(trimWithCommasIfTooLong(album.title, uiColumnWidth)),
+		)
+	}
+}
+
+func trimWithCommasIfTooLong(text string, maxLength int) string {
+	if len(text) > maxLength {
+		text = text[:maxLength] + "..."
+	}
+	return text
 }
