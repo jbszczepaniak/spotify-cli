@@ -99,7 +99,7 @@ func main() {
 	window.SetTitle("SPOTIFY CLI")
 
 	playBackButtons := []tui.Widget{playback.playback.previous, playback.playback.play, playback.playback.stop, playback.playback.next}
-	focusables := append(playBackButtons, sidebar.albums.table)
+	focusables := append(playBackButtons, sidebar.albumList.table)
 	focusables = append(focusables, search.focusables...)
 	focusables = append(focusables, playback.devices.table)
 
