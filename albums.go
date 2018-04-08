@@ -13,6 +13,18 @@ type SideBar struct {
 	box       *tui.Box
 }
 
+type Renderer interface {
+	render() error
+}
+
+type PageRenderer interface {
+	renderPage(int, int) error
+}
+
+type DataFetcher interface {
+	fetchUserAlbums() error
+}
+
 // AlbumList represents list of albums with underlying data,
 // table to display, box in which table is places, indexes
 // pointing to currently playing item, and last chosen items.
@@ -23,6 +35,10 @@ type AlbumList struct {
 	lastTwoSelected    []int
 	table              *tui.Table
 	box                *tui.Box
+
+	Renderer
+	PageRenderer
+	DataFetcher
 }
 
 type albumDescription struct {

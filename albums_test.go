@@ -143,7 +143,6 @@ func TestFetchUserAlbumListFailsOnFirstCall(t *testing.T) {
 
 func TestFetchUserAlbumListFailsWhenFetchingNotFirstPage(t *testing.T) {
 	defer func() { spotifyAPIPageOffset = 25 }() // Reset after test
-	t.Log(spotifyAPIPageOffset)
 	client := &DebugClient{}
 	fetcherMock := &AlbumFetcherMock{}
 
@@ -171,6 +170,47 @@ func TestFetchUserAlbumListFailsWhenFetchingNotFirstPage(t *testing.T) {
 		t.Fatalf("Expected CurrentUsersAlbumsOpt() to be called twice, but it was called %d times", fetcherMock.call)
 	}
 }
+
+type fakeDataFetcher struct {
+	ExecutionError bool
+}
+
+func (fake *fakeDataFetcher) fetchUserAlbums() error {
+	if fake.ExecutionError == true {
+		return fmt.Errorf("error")
+	}
+	return nil
+}
+
+type fakePageRenderer struct {
+	ExecutionError bool
+}
+
+func (fake *fakePageRenderer) renderPage(int, int) error {
+	if fake.ExecutionError == true {
+		return fmt.Errorf("error")
+	}
+	return nil
+}
+
+// func TestRenderFailsWhenFetchingUserAlbumsFail(t *testing.T) {
+// 	albumList := &AlbumList{}
+// 	albumList.DataFetcher = &fakeDataFetcher{ExecutionError: true}
+// 	err := albumList.render()
+// 	if err == nil {
+// 		t.Fatalf("Expected to fail but it didn't")
+// 	}
+// }
+
+// func TestRenderFailsWhenPageRenderingFail(t *testing.T) {
+// 	albumList := &AlbumList{}
+// 	albumList.DataFetcher = &fakeDataFetcher{ExecutionError: false}
+// 	albumList.PageRenderer = &fakePageRenderer{ExecutionError: true}
+// 	err := albumList.render()
+// 	if err == nil {
+// 		t.Fatalf("Expected to fail but it didn't")
+// 	}
+// }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
 	text := "Some text"
