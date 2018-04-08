@@ -7,17 +7,15 @@ import (
 	"github.com/zmb3/spotify"
 )
 
-type albumDescription struct {
-	artist string
-	title  string
-	uri    spotify.URI
-}
-
-type sideBar struct {
+// SideBar represents box with album list inside this box.
+type SideBar struct {
 	albumList *AlbumList
 	box       *tui.Box
 }
 
+// AlbumList represents list of albums with underlying data,
+// table to display, box in which table is places, indexes
+// pointing to currently playing item, and last chosen items.
 type AlbumList struct {
 	client             SpotifyClient
 	albumsDescriptions []albumDescription
@@ -27,6 +25,12 @@ type AlbumList struct {
 	box                *tui.Box
 }
 
+type albumDescription struct {
+	artist string
+	title  string
+	uri    spotify.URI
+}
+
 var (
 	visibleAlbums        = 45
 	spotifyAPIPageSize   = 25
@@ -34,17 +38,19 @@ var (
 	uiColumnWidth        = 20
 )
 
-func NewSideBar(client SpotifyClient) (*sideBar, error) {
-	al := NewAlbumList(client)
+// NewSideBar creates struct which holds references to
+// SideBar Box and AlbumList placed inside SideBar
+func NewSideBar(client SpotifyClient) (*SideBar, error) {
+	al := newEmptyAlbumList(client)
 	err := al.render()
 	if err != nil {
 		return nil, err
 	}
 	box := tui.NewHBox(al.box, tui.NewSpacer())
-	return &sideBar{albumList: al, box: box}, nil
+	return &SideBar{albumList: al, box: box}, nil
 }
 
-func NewAlbumList(client SpotifyClient) *AlbumList {
+func newEmptyAlbumList(client SpotifyClient) *AlbumList {
 	table := tui.NewTable(0, 0)
 	table.SetColumnStretch(0, 1)
 	table.SetColumnStretch(1, 1)
@@ -56,58 +62,33 @@ func NewAlbumList(client SpotifyClient) *AlbumList {
 	albumListBox.SetSizePolicy(tui.Preferred, tui.Expanding)
 
 	return &AlbumList{
-		client:          client,
-		currDataIdx:     0,
-		lastTwoSelected: []int{-1, -1},
-		table:           table,
-		box:             albumListBox,
+		client:             client,
+		currDataIdx:        0,
+		lastTwoSelected:    []int{-1, -1},
+		table:              table,
+		box:                albumListBox,
+		albumsDescriptions: []albumDescription{},
 	}
 }
 
 func (albumList *AlbumList) render() error {
-	savedAlbums, err := albumList.getUserAlbums()
+	err := albumList.fetchUserAlbums()
 	if err != nil {
 		return err
 	}
-	for _, album := range savedAlbums {
-		albumList.albumsDescriptions = append(albumList.albumsDescriptions, albumDescription{album.Name, album.Artists[0].Name, album.URI})
+	err = albumList.renderPage(0, visibleAlbums)
+	if err != nil {
+		return err
 	}
-
-	albumList.renderAlbumListPage(0, visibleAlbums)
-
-	albumList.table.OnSelectionChanged(func(t *tui.Table) {
-		if albumList.nextPage() {
-			albumList.renderAlbumListPage(
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums+visibleAlbums,
-			)
-			albumList.lastTwoSelected = []int{-1, -1}
-			t.Select(1)
-			return
-		}
-		if albumList.previousPage(t.Selected()) {
-			albumList.renderAlbumListPage(
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums-visibleAlbums,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
-			)
-			albumList.lastTwoSelected = []int{visibleAlbums + 2, visibleAlbums + 1}
-			t.Select(visibleAlbums)
-			return
-		}
-		albumList.updateIndexes(t.Selected())
-	})
-
-	albumList.table.OnItemActivated(func(t *tui.Table) {
-		albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &albumList.albumsDescriptions[albumList.currDataIdx-1].uri})
-	})
-
+	albumList.table.OnSelectionChanged(albumList.onSelectedChanged())
+	albumList.table.OnItemActivated(albumList.onItemActivaed())
 	return nil
 }
 
-func (albumList *AlbumList) getUserAlbums() ([]spotify.SavedAlbum, error) {
+func (albumList *AlbumList) fetchUserAlbums() error {
 	initialPage, err := albumList.client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
+		return fmt.Errorf("could not fetch current user albums: %v", err)
 	}
 	userAlbums := make([]spotify.SavedAlbum, 0)
 	userAlbums = append(userAlbums, initialPage.Albums...)
@@ -119,25 +100,62 @@ func (albumList *AlbumList) getUserAlbums() ([]spotify.SavedAlbum, error) {
 			Offset: &spotifyAPIPageOffset,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
+			return fmt.Errorf("could not fetch page current user albums: %v", err)
 		}
 		spotifyAPIPageOffset += spotifyAPIPageSize
 		userAlbums = append(userAlbums, page.Albums...)
 	}
-	return userAlbums, nil
+
+	for _, album := range userAlbums {
+		albumList.albumsDescriptions = append(
+			albumList.albumsDescriptions,
+			albumDescription{album.Name, album.Artists[0].Name, album.URI},
+		)
+	}
+	return nil
+}
+
+func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
+	return func(t *tui.Table) {
+		if albumList.nextPage() {
+			err := albumList.renderPage(
+				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
+				(albumList.currDataIdx/visibleAlbums)*visibleAlbums+visibleAlbums,
+			)
+			if err != nil {
+				panic(err)
+			}
+			albumList.lastTwoSelected = []int{-1, -1}
+			t.Select(1)
+			return
+		}
+		if albumList.previousPage() {
+			err := albumList.renderPage(
+				(albumList.currDataIdx/visibleAlbums)*visibleAlbums-visibleAlbums,
+				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
+			)
+			if err != nil {
+				panic(err)
+			}
+			albumList.lastTwoSelected = []int{visibleAlbums + 2, visibleAlbums + 1}
+			t.Select(visibleAlbums)
+			return
+		}
+		albumList.updateIndexes()
+	}
 }
 
 func (albumList *AlbumList) nextPage() bool {
 	return albumList.lastTwoSelected[0] == visibleAlbums-1 && albumList.lastTwoSelected[1] == visibleAlbums
 }
 
-func (albumList *AlbumList) previousPage(selected int) bool {
-	return albumList.lastTwoSelected[1] == 1 && selected == 0 && albumList.currDataIdx >= visibleAlbums
+func (albumList *AlbumList) previousPage() bool {
+	return albumList.lastTwoSelected[1] == 1 && albumList.table.Selected() == 0 && albumList.currDataIdx >= visibleAlbums
 }
 
-func (albumList *AlbumList) updateIndexes(selected int) {
+func (albumList *AlbumList) updateIndexes() {
 	albumList.lastTwoSelected[0] = albumList.lastTwoSelected[1]
-	albumList.lastTwoSelected[1] = selected
+	albumList.lastTwoSelected[1] = albumList.table.Selected()
 
 	if albumList.lastTwoSelected[0] > albumList.lastTwoSelected[1] {
 		albumList.currDataIdx--
@@ -147,18 +165,28 @@ func (albumList *AlbumList) updateIndexes(selected int) {
 	}
 }
 
-func (albumList *AlbumList) renderAlbumListPage(start, end int) {
+func (albumList *AlbumList) onItemActivaed() func(*tui.Table) {
+	return func(t *tui.Table) {
+		albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &albumList.albumsDescriptions[albumList.currDataIdx-2].uri})
+	}
+}
+
+func (albumList *AlbumList) renderPage(start, end int) error {
 	albumList.table.RemoveRows()
 	albumList.table.AppendRow(
 		tui.NewLabel("Title"),
 		tui.NewLabel("Artist"),
 	)
+	if len(albumList.albumsDescriptions) < end {
+		return fmt.Errorf("could not iterate over slice with length %d, with [%d:%d]", len(albumList.albumsDescriptions), start, end)
+	}
 	for _, album := range albumList.albumsDescriptions[start:end] {
 		albumList.table.AppendRow(
 			tui.NewLabel(trimWithCommasIfTooLong(album.artist, uiColumnWidth)),
 			tui.NewLabel(trimWithCommasIfTooLong(album.title, uiColumnWidth)),
 		)
 	}
+	return nil
 }
 
 func trimWithCommasIfTooLong(text string, maxLength int) string {

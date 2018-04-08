@@ -24,7 +24,7 @@ func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, se
 			spotify.SearchTypeAlbum|spotify.SearchTypeTrack|spotify.SearchTypeArtist,
 		)
 		if err != nil {
-			log.Fatalf("could not search for %s, %s", entry, err)
+			log.Fatalf("could not search for %v, %s", entry, err)
 		}
 
 		searchedAlbums.resetSearchResults()

@@ -9,8 +9,9 @@ import (
 
 func NewDebugClient() SpotifyClient {
 	return DebugClient{
-		Player:   &DebugPlayer{},
-		Searcher: &DebugSearcher{},
+		Player:           &DebugPlayer{},
+		Searcher:         &DebugSearcher{},
+		UserAlbumFetcher: &DebugUserAlbumFetcher{},
 	}
 }
 
@@ -18,6 +19,7 @@ func NewDebugClient() SpotifyClient {
 type DebugClient struct {
 	Player
 	Searcher
+	UserAlbumFetcher
 }
 
 type DebugPlayer struct{}
@@ -39,8 +41,10 @@ func (ds DebugSearcher) Search(query string, t spotify.SearchType) (*spotify.Sea
 	return nil, nil
 }
 
+type DebugUserAlbumFetcher struct{}
+
 // CurrentUsersAlbums is a dummy implementation used when running in debug mode
-func (fc DebugClient) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
+func (debugFetcher DebugUserAlbumFetcher) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
 	fakedAlbums := make([]spotify.SavedAlbum, 0)
 	for i := 1; i <= visibleAlbums*3; i++ {
 		album := spotify.SavedAlbum{}

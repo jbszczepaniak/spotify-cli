@@ -29,7 +29,7 @@ func checkMode() {
 // SpotifyClient is a wrapper interface around spotify.client
 // used in order to improve testability of the code.
 type SpotifyClient interface {
-	CurrentUsersAlbumsOpt(opt *spotify.Options) (*spotify.SavedAlbumPage, error)
+	UserAlbumFetcher
 	Player
 	Searcher
 	Pause() error
@@ -49,6 +49,10 @@ type Player interface {
 
 type Searcher interface {
 	Search(string, spotify.SearchType) (*spotify.SearchResult, error)
+}
+
+type UserAlbumFetcher interface {
+	CurrentUsersAlbumsOpt(opt *spotify.Options) (*spotify.SavedAlbumPage, error)
 }
 
 func main() {
