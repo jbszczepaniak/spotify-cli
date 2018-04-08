@@ -94,7 +94,7 @@ func (albumList *AlbumList) fetchUserAlbums() error {
 	userAlbums = append(userAlbums, initialPage.Albums...)
 
 	page := initialPage
-	for page.Offset < initialPage.Total {
+	for spotifyAPIPageOffset < initialPage.Total {
 		page, err = albumList.client.CurrentUsersAlbumsOpt(&spotify.Options{
 			Limit:  &initialPage.Limit,
 			Offset: &spotifyAPIPageOffset,
@@ -177,8 +177,11 @@ func (albumList *AlbumList) renderPage(start, end int) error {
 		tui.NewLabel("Title"),
 		tui.NewLabel("Artist"),
 	)
+	if len(albumList.albumsDescriptions) == 0 {
+		return fmt.Errorf("could not iterate over empty slice")
+	}
 	if len(albumList.albumsDescriptions) < end {
-		return fmt.Errorf("could not iterate over slice with length %d, with [%d:%d]", len(albumList.albumsDescriptions), start, end)
+		end = len(albumList.albumsDescriptions) // This means that there is less user albums than there is displayed at once on the page.
 	}
 	for _, album := range albumList.albumsDescriptions[start:end] {
 		albumList.table.AppendRow(

@@ -45,16 +45,20 @@ type DebugUserAlbumFetcher struct{}
 
 // CurrentUsersAlbums is a dummy implementation used when running in debug mode
 func (debugFetcher DebugUserAlbumFetcher) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
-	fakedAlbums := make([]spotify.SavedAlbum, 0)
-	for i := 1; i <= visibleAlbums*3; i++ {
+	return &spotify.SavedAlbumPage{
+		Albums: constructNSpotifySavedAlbums(visibleAlbums * 3),
+	}, nil
+}
+
+func constructNSpotifySavedAlbums(n int) []spotify.SavedAlbum {
+	albums := make([]spotify.SavedAlbum, 0)
+	for i := 1; i <= n; i++ {
 		album := spotify.SavedAlbum{}
 		album.Name = fmt.Sprintf("Album Name %d", i)
 		album.Artists = []spotify.SimpleArtist{spotify.SimpleArtist{Name: fmt.Sprintf("Artist Name %d", i)}}
-		fakedAlbums = append(fakedAlbums, album)
+		albums = append(albums, album)
 	}
-	return &spotify.SavedAlbumPage{
-		Albums: fakedAlbums,
-	}, nil
+	return albums
 }
 
 // Previous is a dummy implementation used when running in debug mode
