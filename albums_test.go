@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/marcusolsson/tui-go"
@@ -261,6 +262,34 @@ func TestPreviousPage(t *testing.T) {
 		albumList.table.Select(c.selectedTableItem) // Pretend that this item is selected
 		if shouldOpenPreviousPage := albumList.previousPage(); shouldOpenPreviousPage != c.shouldOpenPreviousPage {
 			t.Fatalf("Got %v, but wanted %v for previous page", shouldOpenPreviousPage, c.shouldOpenPreviousPage)
+		}
+	}
+}
+
+func TestUpdateIndexes(t *testing.T) {
+	albumList := &AlbumList{table: &tui.Table{}}
+	cases := []struct {
+		lastTwoSelected   []int
+		newTwoSelected    []int
+		currDataIdx       int
+		newDataIdx        int
+		selectedTableItem int
+	}{
+		{[]int{1, 2}, []int{2, 3}, 100, 101, 3}, // last two were: 1, 2 and going to 3.
+		{[]int{1, 2}, []int{2, 1}, 100, 99, 1},  // last two were: 1, 2 and goind to 1 again.
+	}
+	for _, c := range cases {
+		albumList.lastTwoSelected = c.lastTwoSelected
+		albumList.currDataIdx = c.currDataIdx
+		albumList.table.Select(c.selectedTableItem)
+
+		albumList.updateIndexes()
+
+		if albumList.currDataIdx != c.newDataIdx {
+			t.Fatalf("Expected new data index to be %d, have %d", c.newDataIdx, albumList.currDataIdx)
+		}
+		if !reflect.DeepEqual(albumList.lastTwoSelected, c.newTwoSelected) {
+			t.Fatalf("Expected new last two selected to be %#v, have %#v", c.newTwoSelected, albumList.lastTwoSelected)
 		}
 	}
 }
