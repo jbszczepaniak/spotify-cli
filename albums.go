@@ -18,11 +18,11 @@ type Renderer interface {
 }
 
 type PageRenderer interface {
-	renderPage(int, int) error
+	renderPage([]albumDescription, int, int) error
 }
 
 type DataFetcher interface {
-	fetchUserAlbums() error
+	fetchUserAlbums() ([]albumDescription, error)
 }
 
 // AlbumList represents list of albums with underlying data,
@@ -84,15 +84,19 @@ func newEmptyAlbumList(client SpotifyClient) *AlbumList {
 		table:              table,
 		box:                albumListBox,
 		albumsDescriptions: []albumDescription{},
+
+		DataFetcher:  &FetchUserAlbumsStruct{client: client},
+		PageRenderer: &RenderPageStruct{table: table},
 	}
 }
 
 func (albumList *AlbumList) render() error {
-	err := albumList.fetchUserAlbums()
+	albumsDescriptions, err := albumList.DataFetcher.fetchUserAlbums()
 	if err != nil {
 		return err
 	}
-	err = albumList.renderPage(0, visibleAlbums)
+	albumList.albumsDescriptions = albumsDescriptions
+	err = albumList.PageRenderer.renderPage(albumList.albumsDescriptions, 0, visibleAlbums)
 	if err != nil {
 		return err
 	}
@@ -101,40 +105,43 @@ func (albumList *AlbumList) render() error {
 	return nil
 }
 
-func (albumList *AlbumList) fetchUserAlbums() error {
-	initialPage, err := albumList.client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
+type FetchUserAlbumsStruct struct {
+	client SpotifyClient
+}
+
+func (fetchUserAlbumsStruct *FetchUserAlbumsStruct) fetchUserAlbums() ([]albumDescription, error) {
+	initialPage, err := fetchUserAlbumsStruct.client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
 	if err != nil {
-		return fmt.Errorf("could not fetch current user albums: %v", err)
+		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
 	}
 	userAlbums := make([]spotify.SavedAlbum, 0)
 	userAlbums = append(userAlbums, initialPage.Albums...)
 
 	page := initialPage
 	for spotifyAPIPageOffset < initialPage.Total {
-		page, err = albumList.client.CurrentUsersAlbumsOpt(&spotify.Options{
+		page, err = fetchUserAlbumsStruct.client.CurrentUsersAlbumsOpt(&spotify.Options{
 			Limit:  &initialPage.Limit,
 			Offset: &spotifyAPIPageOffset,
 		})
 		if err != nil {
-			return fmt.Errorf("could not fetch page current user albums: %v", err)
+			return nil, fmt.Errorf("could not fetch page current user albums: %v", err)
 		}
 		spotifyAPIPageOffset += spotifyAPIPageSize
 		userAlbums = append(userAlbums, page.Albums...)
 	}
 
+	albumsDescriptions := make([]albumDescription, 0)
 	for _, album := range userAlbums {
-		albumList.albumsDescriptions = append(
-			albumList.albumsDescriptions,
-			albumDescription{album.Name, album.Artists[0].Name, album.URI},
-		)
+		albumsDescriptions = append(albumsDescriptions, albumDescription{album.Name, album.Artists[0].Name, album.URI})
 	}
-	return nil
+	return albumsDescriptions, nil
 }
 
 func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 	return func(t *tui.Table) {
 		if albumList.nextPage() {
 			err := albumList.renderPage(
+				albumList.albumsDescriptions,
 				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
 				(albumList.currDataIdx/visibleAlbums)*visibleAlbums+visibleAlbums,
 			)
@@ -147,6 +154,7 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 		}
 		if albumList.previousPage() {
 			err := albumList.renderPage(
+				albumList.albumsDescriptions,
 				(albumList.currDataIdx/visibleAlbums)*visibleAlbums-visibleAlbums,
 				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
 			)
@@ -187,20 +195,24 @@ func (albumList *AlbumList) onItemActivaed() func(*tui.Table) {
 	}
 }
 
-func (albumList *AlbumList) renderPage(start, end int) error {
-	albumList.table.RemoveRows()
-	albumList.table.AppendRow(
+type RenderPageStruct struct {
+	table *tui.Table
+}
+
+func (renderPageStruct *RenderPageStruct) renderPage(albumsDescriptions []albumDescription, start, end int) error {
+	renderPageStruct.table.RemoveRows()
+	renderPageStruct.table.AppendRow(
 		tui.NewLabel("Title"),
 		tui.NewLabel("Artist"),
 	)
-	if len(albumList.albumsDescriptions) == 0 {
+	if len(albumsDescriptions) == 0 {
 		return fmt.Errorf("could not iterate over empty slice")
 	}
-	if len(albumList.albumsDescriptions) < end {
-		end = len(albumList.albumsDescriptions) // This means that there is less user albums than there is displayed at once on the page.
+	if len(albumsDescriptions) < end {
+		end = len(albumsDescriptions) // This means that there is less user albums than there is displayed at once on the page.
 	}
-	for _, album := range albumList.albumsDescriptions[start:end] {
-		albumList.table.AppendRow(
+	for _, album := range albumsDescriptions[start:end] {
+		renderPageStruct.table.AppendRow(
 			tui.NewLabel(trimWithCommasIfTooLong(album.artist, uiColumnWidth)),
 			tui.NewLabel(trimWithCommasIfTooLong(album.title, uiColumnWidth)),
 		)

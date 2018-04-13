@@ -55,8 +55,10 @@ func (fsr *FakeSearchResult) resetSearchResults() {
 
 func TestSearchInputOnSubmit(t *testing.T) {
 	client := &DebugClient{}
+	t.Logf("client: %#v", client)
 	client.Searcher = &FakeSearcher{}
-
+	t.Logf("client: %#v", client)
+	t.Logf("client.Search: %#v", client.Search)
 	testEntry := tui.Entry{}
 	testEntry.SetText("Some search query")
 
