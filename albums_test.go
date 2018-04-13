@@ -226,7 +226,43 @@ func TestRenderSucceds(t *testing.T) {
 }
 
 func TestNextPage(t *testing.T) {
+	albumList := &AlbumList{table: &tui.Table{}}
+	cases := []struct {
+		lastTwoSelected    []int
+		shouldOpenNextPage bool
+	}{
+		{[]int{44, 45}, true}, // We are on last item, we should go to next page
+		{[]int{0, 1}, false},  // We are on the beginning on the list, we should not go to next page
+	}
+	for _, c := range cases {
+		albumList.lastTwoSelected = c.lastTwoSelected
+		if shouldOpenNextPage := albumList.nextPage(); shouldOpenNextPage != c.shouldOpenNextPage {
+			t.Fatalf("Got %v, but wanted %v for next page", shouldOpenNextPage, c.shouldOpenNextPage)
+		}
+	}
+}
 
+func TestPreviousPage(t *testing.T) {
+	albumList := &AlbumList{table: &tui.Table{}}
+	cases := []struct {
+		lastTwoSelected        []int
+		selectedTableItem      int
+		currDataIdx            int
+		shouldOpenPreviousPage bool
+	}{
+		{[]int{0, 1}, 0, 46, true}, // Only conditions where next page will be displayed
+		{[]int{44, 45}, 0, 1, false},
+		{[]int{0, 1}, 1, 46, false},
+		{[]int{0, 1}, 0, 0, false},
+	}
+	for _, c := range cases {
+		albumList.lastTwoSelected = c.lastTwoSelected
+		albumList.currDataIdx = c.currDataIdx       // Pretend this is current data index
+		albumList.table.Select(c.selectedTableItem) // Pretend that this item is selected
+		if shouldOpenPreviousPage := albumList.previousPage(); shouldOpenPreviousPage != c.shouldOpenPreviousPage {
+			t.Fatalf("Got %v, but wanted %v for previous page", shouldOpenPreviousPage, c.shouldOpenPreviousPage)
+		}
+	}
 }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
