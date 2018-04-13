@@ -7,19 +7,21 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// NewDebugClient returns Client which can be used in debug mode or in tests,
+// It does not communicate with Spotify API.
 func NewDebugClient() SpotifyClient {
 	return DebugClient{
-		Player:           &DebugPlayer{},
-		Searcher:         &DebugSearcher{},
-		UserAlbumFetcher: &DebugUserAlbumFetcher{},
+		player:           &DebugPlayer{},
+		searcher:         &DebugSearcher{},
+		userAlbumFetcher: &DebugUserAlbumFetcher{},
 	}
 }
 
 // DebugClient is a dummy struct used when running in debug mode
 type DebugClient struct {
-	Player
-	Searcher
-	UserAlbumFetcher
+	player
+	searcher
+	userAlbumFetcher
 }
 
 type DebugPlayer struct{}
@@ -43,7 +45,7 @@ func (ds DebugSearcher) Search(query string, t spotify.SearchType) (*spotify.Sea
 
 type DebugUserAlbumFetcher struct{}
 
-// CurrentUsersAlbums is a dummy implementation used when running in debug mode
+// CurrentUsersAlbumsOpt is a dummy implementation used when running in debug mode
 func (debugFetcher DebugUserAlbumFetcher) CurrentUsersAlbumsOpt(options *spotify.Options) (*spotify.SavedAlbumPage, error) {
 	return &spotify.SavedAlbumPage{
 		Albums: constructNSpotifySavedAlbums(visibleAlbums * 3),

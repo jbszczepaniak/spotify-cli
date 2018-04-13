@@ -45,6 +45,8 @@ func searchInputOnSubmit(client SpotifyClient, searchedSongs, searchedAlbums, se
 	}
 }
 
+// NewSearch creates data structure which represent search input
+// with search results.
 func NewSearch(client SpotifyClient) *search {
 	searchedSongs := NewSearchResults(client, "Songs")
 	searchedAlbums := NewSearchResults(client, "Albums")

@@ -13,15 +13,15 @@ type SideBar struct {
 	box       *tui.Box
 }
 
-type Renderer interface {
+type renderer interface {
 	render() error
 }
 
-type PageRenderer interface {
+type pageRenderer interface {
 	renderPage([]albumDescription, int, int) error
 }
 
-type DataFetcher interface {
+type dataFetcher interface {
 	fetchUserAlbums() ([]albumDescription, error)
 }
 
@@ -36,9 +36,9 @@ type AlbumList struct {
 	table              *tui.Table
 	box                *tui.Box
 
-	Renderer
-	PageRenderer
-	DataFetcher
+	renderer
+	pageRenderer
+	dataFetcher
 }
 
 type albumDescription struct {
@@ -85,18 +85,18 @@ func newEmptyAlbumList(client SpotifyClient) *AlbumList {
 		box:                albumListBox,
 		albumsDescriptions: []albumDescription{},
 
-		DataFetcher:  &FetchUserAlbumsStruct{client: client},
-		PageRenderer: &RenderPageStruct{table: table},
+		dataFetcher:  &fetchUserAlbumsStruct{client: client},
+		pageRenderer: &renderPageStruct{table: table},
 	}
 }
 
 func (albumList *AlbumList) render() error {
-	albumsDescriptions, err := albumList.DataFetcher.fetchUserAlbums()
+	albumsDescriptions, err := albumList.dataFetcher.fetchUserAlbums()
 	if err != nil {
 		return err
 	}
 	albumList.albumsDescriptions = albumsDescriptions
-	err = albumList.PageRenderer.renderPage(albumList.albumsDescriptions, 0, visibleAlbums)
+	err = albumList.pageRenderer.renderPage(albumList.albumsDescriptions, 0, visibleAlbums)
 	if err != nil {
 		return err
 	}
@@ -105,11 +105,11 @@ func (albumList *AlbumList) render() error {
 	return nil
 }
 
-type FetchUserAlbumsStruct struct {
+type fetchUserAlbumsStruct struct {
 	client SpotifyClient
 }
 
-func (fetchUserAlbumsStruct *FetchUserAlbumsStruct) fetchUserAlbums() ([]albumDescription, error) {
+func (fetchUserAlbumsStruct *fetchUserAlbumsStruct) fetchUserAlbums() ([]albumDescription, error) {
 	initialPage, err := fetchUserAlbumsStruct.client.CurrentUsersAlbumsOpt(&spotify.Options{Limit: &spotifyAPIPageSize})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch current user albums: %v", err)
@@ -195,11 +195,11 @@ func (albumList *AlbumList) onItemActivaed() func(*tui.Table) {
 	}
 }
 
-type RenderPageStruct struct {
+type renderPageStruct struct {
 	table *tui.Table
 }
 
-func (renderPageStruct *RenderPageStruct) renderPage(albumsDescriptions []albumDescription, start, end int) error {
+func (renderPageStruct *renderPageStruct) renderPage(albumsDescriptions []albumDescription, start, end int) error {
 	renderPageStruct.table.RemoveRows()
 	renderPageStruct.table.AppendRow(
 		tui.NewLabel("Title"),

@@ -55,10 +55,7 @@ func (fsr *FakeSearchResult) resetSearchResults() {
 
 func TestSearchInputOnSubmit(t *testing.T) {
 	client := &DebugClient{}
-	t.Logf("client: %#v", client)
-	client.Searcher = &FakeSearcher{}
-	t.Logf("client: %#v", client)
-	t.Logf("client.Search: %#v", client.Search)
+	client.searcher = &FakeSearcher{}
 	testEntry := tui.Entry{}
 	testEntry.SetText("Some search query")
 
@@ -151,7 +148,7 @@ func TestOnItemActivatedCallback(t *testing.T) {
 			playOptErrCallWithURI:     c.errCallWithURI,
 			playOptErrCallWithContext: c.errCallWithContext,
 		}
-		client.Player = fakePlayer
+		client.player = fakePlayer
 
 		results := NewSearchResults(client, "Results")
 		results.appendSearchResult(URIName{Name: "Name", URI: "some:spotify:uri"})
@@ -171,15 +168,15 @@ func TestOnItemActivatedCallback(t *testing.T) {
 func TestAppendRemoveSearchResults(t *testing.T) {
 	client := &DebugClient{}
 	results := NewSearchResults(client, "Results")
-	testUriName := URIName{URI: "test:spotify:uri", Name: "Test Name"}
+	testURIName := URIName{URI: "test:spotify:uri", Name: "Test Name"}
 
-	results.appendSearchResult(testUriName)
+	results.appendSearchResult(testURIName)
 	if resultsItemsCount := len(results.getData()); resultsItemsCount != 1 {
-		t.Fatal("Expect results to have 1 item, but results have %d items", resultsItemsCount)
+		t.Fatalf("Expect results to have 1 item, but results have %d items", resultsItemsCount)
 	}
 
 	results.resetSearchResults()
 	if resultsItemsCount := len(results.getData()); resultsItemsCount != 0 {
-		t.Fatal("Expect results to have 0 item, but results have %d items", resultsItemsCount)
+		t.Fatalf("Expect results to have 0 item, but results have %d items", resultsItemsCount)
 	}
 }

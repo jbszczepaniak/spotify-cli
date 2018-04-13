@@ -51,7 +51,7 @@ func TestFetchUserAlbumListFetchesNoPages(t *testing.T) {
 			returnValue:    &spotify.SavedAlbumPage{Albums: make([]spotify.SavedAlbum, 0)},
 		},
 	}
-	client.UserAlbumFetcher = fetcherMock
+	client.userAlbumFetcher = fetcherMock
 
 	albumList := newEmptyAlbumList(client)
 	albumList.fetchUserAlbums()
@@ -74,7 +74,7 @@ func TestFetchUserAlbumListFetchesSinglePage(t *testing.T) {
 			returnValue:    saved,
 		},
 	}
-	client.UserAlbumFetcher = fetcherMock
+	client.userAlbumFetcher = fetcherMock
 
 	albumList := newEmptyAlbumList(client)
 	albumsDescriptions, err := albumList.fetchUserAlbums()
@@ -106,7 +106,7 @@ func TestFetchUserAlbumListFetchesManyPages(t *testing.T) {
 			returnValue:    saved,
 		},
 	}
-	client.UserAlbumFetcher = fetcherMock
+	client.userAlbumFetcher = fetcherMock
 
 	albumList := newEmptyAlbumList(client)
 	albumsDescriptions, err := albumList.fetchUserAlbums()
@@ -130,7 +130,7 @@ func TestFetchUserAlbumListFailsOnFirstCall(t *testing.T) {
 			returnValue:    nil,
 		},
 	}
-	client.UserAlbumFetcher = fetcherMock
+	client.userAlbumFetcher = fetcherMock
 
 	albumList := newEmptyAlbumList(client)
 	_, err := albumList.fetchUserAlbums()
@@ -160,7 +160,7 @@ func TestFetchUserAlbumListFailsWhenFetchingNotFirstPage(t *testing.T) {
 			returnValue:    nil,
 		},
 	}
-	client.UserAlbumFetcher = fetcherMock
+	client.userAlbumFetcher = fetcherMock
 
 	albumList := newEmptyAlbumList(client)
 	_, err := albumList.fetchUserAlbums()
@@ -196,7 +196,7 @@ func (fake *fakePageRenderer) renderPage([]albumDescription, int, int) error {
 
 func TestRenderFailsWhenFetchingUserAlbumsFail(t *testing.T) {
 	albumList := &AlbumList{}
-	albumList.DataFetcher = &fakeDataFetcher{ExecutionError: true}
+	albumList.dataFetcher = &fakeDataFetcher{ExecutionError: true}
 	err := albumList.render()
 	if err == nil {
 		t.Fatalf("Expected to fail but it didn't")
@@ -205,8 +205,8 @@ func TestRenderFailsWhenFetchingUserAlbumsFail(t *testing.T) {
 
 func TestRenderFailsWhenPageRenderingFail(t *testing.T) {
 	albumList := &AlbumList{}
-	albumList.DataFetcher = &fakeDataFetcher{ExecutionError: false}
-	albumList.PageRenderer = &fakePageRenderer{ExecutionError: true}
+	albumList.dataFetcher = &fakeDataFetcher{ExecutionError: false}
+	albumList.pageRenderer = &fakePageRenderer{ExecutionError: true}
 	err := albumList.render()
 	if err == nil {
 		t.Fatalf("Expected to fail but it didn't")
@@ -215,8 +215,8 @@ func TestRenderFailsWhenPageRenderingFail(t *testing.T) {
 
 func TestRenderSucceds(t *testing.T) {
 	albumList := &AlbumList{
-		DataFetcher:  &fakeDataFetcher{ExecutionError: false},
-		PageRenderer: &fakePageRenderer{ExecutionError: false},
+		dataFetcher:  &fakeDataFetcher{ExecutionError: false},
+		pageRenderer: &fakePageRenderer{ExecutionError: false},
 		table:        &tui.Table{},
 	}
 	err := albumList.render()

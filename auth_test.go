@@ -43,7 +43,7 @@ func TestAuthenticateClient(t *testing.T) {
 		testState := appState{
 			client:         make(chan *spotify.Client),
 			playerShutdown: make(chan bool),
-			playerDeviceId: make(chan spotify.ID),
+			playerDeviceID: make(chan spotify.ID),
 		}
 		go func() {
 			testState.client <- &spotify.Client{}
@@ -219,7 +219,7 @@ func TestWebSocketHandler(t *testing.T) {
 	as := appState{
 		client:         make(chan *spotify.Client),
 		playerShutdown: make(chan bool),
-		playerDeviceId: make(chan spotify.ID),
+		playerDeviceID: make(chan spotify.ID),
 	}
 
 	h := http.NewServeMux()
@@ -231,16 +231,16 @@ func TestWebSocketHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to dial websocket with %#v", err)
 	}
-	expectedReadyDeviceId := "1jdjd8dj38djd09dfhjk"
+	expectedReadyDeviceID := "1jdjd8dj38djd09dfhjk"
 
-	msg := WebPlaybackReadyDevice{DeviceId: expectedReadyDeviceId}
+	msg := WebPlaybackReadyDevice{DeviceId: expectedReadyDeviceID}
 	b, _ := json.Marshal(msg)
 	ws.WriteMessage(websocket.TextMessage, b)
 
-	readyDeviceId := string(<-as.playerDeviceId)
+	readyDeviceId := string(<-as.playerDeviceID)
 
-	if readyDeviceId != expectedReadyDeviceId {
-		t.Fatalf("Expected id of ready device to be %s, have %s", expectedReadyDeviceId, readyDeviceId)
+	if readyDeviceId != expectedReadyDeviceID {
+		t.Fatalf("Expected id of ready device to be %s, have %s", expectedReadyDeviceID, readyDeviceId)
 	}
 
 	defer ws.Close()

@@ -29,9 +29,9 @@ func checkMode() {
 // SpotifyClient is a wrapper interface around spotify.client
 // used in order to improve testability of the code.
 type SpotifyClient interface {
-	UserAlbumFetcher
-	Player
-	Searcher
+	userAlbumFetcher
+	player
+	searcher
 	Pause() error
 	Previous() error
 	Next() error
@@ -42,16 +42,16 @@ type SpotifyClient interface {
 	Token() (*oauth2.Token, error)
 }
 
-type Player interface {
+type player interface {
 	Play() error
 	PlayOpt(opt *spotify.PlayOptions) error
 }
 
-type Searcher interface {
+type searcher interface {
 	Search(string, spotify.SearchType) (*spotify.SearchResult, error)
 }
 
-type UserAlbumFetcher interface {
+type userAlbumFetcher interface {
 	CurrentUsersAlbumsOpt(opt *spotify.Options) (*spotify.SavedAlbumPage, error)
 }
 
@@ -67,7 +67,7 @@ func main() {
 	as := appState{
 		client:            make(chan *spotify.Client),
 		playerShutdown:    make(chan bool),
-		playerDeviceId:    make(chan spotify.ID),
+		playerDeviceID:    make(chan spotify.ID),
 		state:             uuid.New().String(),
 		playerStateChange: make(chan *WebPlaybackState),
 	}
@@ -75,7 +75,7 @@ func main() {
 	if debugMode {
 		client = NewDebugClient()
 		go func() {
-			as.playerDeviceId <- "debug"
+			as.playerDeviceID <- "debug"
 		}()
 	} else {
 		var err error

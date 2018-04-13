@@ -60,7 +60,7 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 type appState struct {
 	client            chan *spotify.Client
 	playerShutdown    chan bool
-	playerDeviceId    chan spotify.ID
+	playerDeviceID    chan spotify.ID
 	playerStateChange chan *WebPlaybackState // currently playing
 	state             string
 }
@@ -133,7 +133,7 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	var v WebPlaybackReadyDevice
 	_, message, err := conn.ReadMessage()
 	err = json.Unmarshal(message, &v)
-	s.playerDeviceId <- spotify.ID(v.DeviceId)
+	s.playerDeviceID <- spotify.ID(v.DeviceId)
 
 	go func() {
 		for range time.Tick(500 * time.Millisecond) {

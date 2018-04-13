@@ -29,6 +29,7 @@ type playback struct {
 	box      *tui.Box
 }
 
+// NewPlayback creates data structure represnting current spotify playback.
 func NewPlayback(client SpotifyClient, as appState) currentlyPlaying {
 	currentlyPlayingLabel := tui.NewLabel("")
 	go func() {
@@ -121,7 +122,7 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 }
 
 func createAvailableDevicesTable(state appState, client SpotifyClient) (*devicesTable, error) {
-	SDKplayerID := <-state.playerDeviceId
+	SDKplayerID := <-state.playerDeviceID
 	err := transferPlaybackToDevice(client, SDKplayerID)
 	if err != nil {
 		return nil, fmt.Errorf("could not transfer playback to device %s, err: %v", SDKplayerID, err)
