@@ -8,10 +8,6 @@ env:
     - SPOTIFY_CLIENT_ID=any
     - SPOTIFY_SECRET=any
 
-before_install:
-  - go get -v github.com/marcusolsson/tui-go
-  - go get -v github.com/zmb3/spotify
-
 script:
   - go build
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic
