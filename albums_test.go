@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/marcusolsson/tui-go"
+
 	"github.com/zmb3/spotify"
 )
 
@@ -57,8 +59,6 @@ func TestFetchUserAlbumListFetchesNoPages(t *testing.T) {
 		t.Fatalf("Expected albums descriptions to be empty, but it has length of %d", len(albumList.albumsDescriptions))
 	}
 }
-
-// Wywala siee przy pobieraniu kolejnej strony
 
 func TestFetchUserAlbumListFetchesSinglePage(t *testing.T) {
 	client := &DebugClient{}
@@ -213,10 +213,20 @@ func TestRenderFailsWhenPageRenderingFail(t *testing.T) {
 }
 
 func TestRenderSucceds(t *testing.T) {
-	albumList := &AlbumList{}
-	albumList.DataFetcher = &fakeDataFetcher{ExecutionError: false}
-	albumList.PageRenderer = &fakePageRenderer{ExecutionError: false}
+	albumList := &AlbumList{
+		DataFetcher:  &fakeDataFetcher{ExecutionError: false},
+		PageRenderer: &fakePageRenderer{ExecutionError: false},
+		table:        &tui.Table{},
+	}
+	err := albumList.render()
+	if err != nil {
+		t.Fatalf("Did not expect to fail but it did with %#v", err)
+	}
 	// Here it should test that table has row added, but I don't see a way to this (query for table size would be nice)
+}
+
+func TestNextPage(t *testing.T) {
+
 }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
