@@ -54,7 +54,16 @@ func (ui *tcellUI) SetTheme(t *Theme) {
 }
 
 func (ui *tcellUI) SetFocusChain(chain FocusChain) {
+	if ui.kbFocus.focusedWidget != nil {
+		ui.kbFocus.focusedWidget.SetFocused(false)
+	}
+
 	ui.kbFocus.chain = chain
+	ui.kbFocus.focusedWidget = chain.FocusDefault()
+
+	if ui.kbFocus.focusedWidget != nil {
+		ui.kbFocus.focusedWidget.SetFocused(true)
+	}
 }
 
 func (ui *tcellUI) SetKeybinding(seq string, fn func()) {
@@ -75,13 +84,19 @@ func (ui *tcellUI) Run() error {
 		return err
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			ui.screen.Fini()
+			logger.Printf("Panic: %s", r)
+		}
+	}()
+
 	if w := ui.kbFocus.chain.FocusDefault(); w != nil {
 		w.SetFocused(true)
 		ui.kbFocus.focusedWidget = w
 	}
 
 	ui.screen.SetStyle(tcell.StyleDefault)
-	ui.screen.EnableMouse()
 	ui.screen.Clear()
 
 	go func() {
@@ -110,6 +125,8 @@ func (ui *tcellUI) Run() error {
 func (ui *tcellUI) handleEvent(ev event) {
 	switch e := ev.(type) {
 	case KeyEvent:
+		logger.Printf("Received key event: %s", e.Name())
+
 		for _, b := range ui.keybindings {
 			if b.match(e) {
 				b.handler()
@@ -119,9 +136,12 @@ func (ui *tcellUI) handleEvent(ev event) {
 		ui.root.OnKeyEvent(e)
 		ui.painter.Repaint(ui.root)
 	case callbackEvent:
+		// Gets stuck in a print loop when the logger is a widget.
+		//logger.Printf("Received callback event")
 		e.cbFn()
 		ui.painter.Repaint(ui.root)
 	case paintEvent:
+		logger.Printf("Received paint event")
 		ui.painter.Repaint(ui.root)
 	}
 }
@@ -145,6 +165,7 @@ func (ui *tcellUI) handleResizeEvent(ev *tcell.EventResize) {
 
 // Quit signals to the UI to start shutting down.
 func (ui *tcellUI) Quit() {
+	logger.Printf("Quitting")
 	ui.screen.Fini()
 	ui.quit <- struct{}{}
 }

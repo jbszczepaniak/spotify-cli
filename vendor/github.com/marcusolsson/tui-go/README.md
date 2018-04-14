@@ -11,6 +11,12 @@ tui (pronounced _tooey_) provides a higher-level programming model for building 
 
 _IMPORTANT:_ tui-go is still in an experimental phase so please don't use it for anything other than experiments, yet.
 
+**Update**: I created tui-go as an experiment because I wanted a simpler way of creating terminal-based user interfaces. It has since then become a project, with all the work that comes with it. While it's been really fun, unfortunately I'm no longer able to maintain this project. 
+
+Since I started working on tui-go, a number of similar projects have popped up. One that I think shows great promise is [rivo/tview](https://github.com/rivo/tview), which embodies much of what I envisioned for tui-go. I highly recommend trying it out!
+
+Thanks all of you who have contributed and supported tui-go!
+
 ![Screenshot](example/chat/screenshot.png)
 
 ## Installation
@@ -31,7 +37,10 @@ func main() {
 		tui.NewLabel("tui-go"),
 	)
 
-	ui := tui.New(box)
+	ui, err := tui.New(box)
+	if err != nil {
+		panic(err)
+	}
 	ui.SetKeybinding("Esc", func() { ui.Quit() })
 
 	if err := ui.Run(); err != nil {
@@ -45,6 +54,10 @@ func main() {
 If you want to know what it is like to build terminal applications with tui-go, check out some of the [examples](example).
 
 Documentation is available at [godoc.org](https://godoc.org/github.com/marcusolsson/tui-go).
+
+Make sure you check out some of the [projects using tui-go](https://godoc.org/github.com/marcusolsson/tui-go?importers).
+
+Once you've gotten started developing your first application with tui-go, you might be interested in learning about common [patterns](https://github.com/marcusolsson/tui-go/wiki/Patterns) or how you can [debug](https://github.com/marcusolsson/tui-go/wiki/Debugging) your applications.
 
 ## Related projects
 
