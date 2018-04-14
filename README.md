@@ -26,17 +26,11 @@ export SPOTIFY_SECRET=yyyyyyyyyyyyyyyy
 ```
 git clone git@github.com:jedruniu/spotify-cli.git
 ``` 
-3. Install required dependencies
-```
-go get -v github.com/marcusolsson/tui-go
-go get -v github.com/zmb3/spotify
-go get -v github.com/google/uuid
-```
-4. Build application
+3. Build application
 ```
 go build
 ```
-5. Run application
+4. Run application
 ```
 ./spotify-cli
 ```
@@ -49,3 +43,4 @@ go test -v
 ## Built With
 * [tui](https://github.com/marcusolsson/tui-go) - Terminal User Interface framework
 * [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper
+* [dep](https://github.com/golang/dep) - Go dependency management tool 
