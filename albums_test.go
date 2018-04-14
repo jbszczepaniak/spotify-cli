@@ -184,10 +184,16 @@ func (fake *fakeDataFetcher) fetchUserAlbums() ([]albumDescription, error) {
 }
 
 type fakePageRenderer struct {
-	ExecutionError bool
+	givenAlbumsDescriptions []albumDescription
+	givenStart              int
+	givenEnd                int
+	ExecutionError          bool
 }
 
-func (fake *fakePageRenderer) renderPage([]albumDescription, int, int) error {
+func (fake *fakePageRenderer) renderPage(albumsDescriptions []albumDescription, start, end int) error {
+	fake.givenAlbumsDescriptions = albumsDescriptions
+	fake.givenStart = start
+	fake.givenEnd = end
 	if fake.ExecutionError == true {
 		return fmt.Errorf("error")
 	}
@@ -294,12 +300,40 @@ func TestUpdateIndexes(t *testing.T) {
 	}
 }
 
-// func TestOnSelectionChange(t *testing.T) {
-// 	table := &tui.Table{}
-// 	albumList := &AlbumList{table: table}
-// 	callback := albumList.onSelectedChanged()
-// 	callback(table)
-// }
+// nextPage + render error -> panic
+// nextPage + render not error -> what parameters called with + test Last Two Selected changed
+// previousPage + render error -> panic
+// previousPage + render not error -> what parameters called with + test Last Two Selected changed
+// ani previous ani next -> indexy są aktualizowane
+
+type fakePaginatorStruct struct {
+	nextPageReturnValue     bool
+	previousPageReturnValue bool
+	currDataIdx             int
+	updateIndexesCalled     bool
+}
+
+func (fake *fakePaginatorStruct) nextPage() bool {
+	return fake.nextPageReturnValue
+}
+
+func (fake *fakePaginatorStruct) previousPage() bool {
+	return fake.previousPageReturnValue
+}
+
+func (fake *fakePaginatorStruct) updateIndexes()           { fake.updateIndexesCalled = true }
+func (fake *fakePaginatorStruct) getCurrDataIdx() int      { return fake.currDataIdx }
+func (fake *fakePaginatorStruct) setLastTwoSelected([]int) {}
+
+func TestOnSelectionChangeUpdatesIndexesWhenNoPageChange(t *testing.T) {
+	fakePaginator := &fakePaginatorStruct{nextPageReturnValue: false, previousPageReturnValue: false}
+	albumList := &AlbumList{pagination: fakePaginator}
+	callback := albumList.onSelectedChanged()
+	callback(&tui.Table{})
+	if fakePaginator.updateIndexesCalled == false {
+		t.Logf("Expected updateIndexes() to be called, but it did not")
+	}
+}
 
 func TestTrimCommasIfTooLong(t *testing.T) {
 	text := "Some text"

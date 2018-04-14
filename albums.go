@@ -150,26 +150,26 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 		if albumList.pagination.nextPage() {
 			err := albumList.pageRenderer.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
-				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
+				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
+				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
 			)
 			if err != nil {
 				panic(err)
 			}
-			albumList.setLastTwoSelected([]int{-1, -1})
+			albumList.pagination.setLastTwoSelected([]int{-1, -1})
 			t.Select(1)
 			return
 		}
 		if albumList.pagination.previousPage() {
 			err := albumList.pageRenderer.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums-visibleAlbums,
-				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
+				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums-visibleAlbums,
+				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
 			)
 			if err != nil {
 				panic(err)
 			}
-			albumList.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
+			albumList.pagination.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
 			t.Select(visibleAlbums)
 			return
 		}
