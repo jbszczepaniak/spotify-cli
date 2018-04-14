@@ -227,7 +227,7 @@ func TestRenderSucceds(t *testing.T) {
 }
 
 func TestNextPage(t *testing.T) {
-	albumList := &AlbumList{table: &tui.Table{}}
+	testPaginator := &paginatorStruct{table: &tui.Table{}}
 	cases := []struct {
 		lastTwoSelected    []int
 		shouldOpenNextPage bool
@@ -236,15 +236,15 @@ func TestNextPage(t *testing.T) {
 		{[]int{0, 1}, false},  // We are on the beginning on the list, we should not go to next page
 	}
 	for _, c := range cases {
-		albumList.lastTwoSelected = c.lastTwoSelected
-		if shouldOpenNextPage := albumList.nextPage(); shouldOpenNextPage != c.shouldOpenNextPage {
+		testPaginator.lastTwoSelected = c.lastTwoSelected
+		if shouldOpenNextPage := testPaginator.nextPage(); shouldOpenNextPage != c.shouldOpenNextPage {
 			t.Fatalf("Got %v, but wanted %v for next page", shouldOpenNextPage, c.shouldOpenNextPage)
 		}
 	}
 }
 
 func TestPreviousPage(t *testing.T) {
-	albumList := &AlbumList{table: &tui.Table{}}
+	testPaginator := &paginatorStruct{table: &tui.Table{}}
 	cases := []struct {
 		lastTwoSelected        []int
 		selectedTableItem      int
@@ -257,17 +257,17 @@ func TestPreviousPage(t *testing.T) {
 		{[]int{0, 1}, 0, 0, false},
 	}
 	for _, c := range cases {
-		albumList.lastTwoSelected = c.lastTwoSelected
-		albumList.currDataIdx = c.currDataIdx       // Pretend this is current data index
-		albumList.table.Select(c.selectedTableItem) // Pretend that this item is selected
-		if shouldOpenPreviousPage := albumList.previousPage(); shouldOpenPreviousPage != c.shouldOpenPreviousPage {
+		testPaginator.lastTwoSelected = c.lastTwoSelected
+		testPaginator.currDataIdx = c.currDataIdx       // Pretend this is current data index
+		testPaginator.table.Select(c.selectedTableItem) // Pretend that this item is selected
+		if shouldOpenPreviousPage := testPaginator.previousPage(); shouldOpenPreviousPage != c.shouldOpenPreviousPage {
 			t.Fatalf("Got %v, but wanted %v for previous page", shouldOpenPreviousPage, c.shouldOpenPreviousPage)
 		}
 	}
 }
 
 func TestUpdateIndexes(t *testing.T) {
-	albumList := &AlbumList{table: &tui.Table{}}
+	testPaginator := &paginatorStruct{table: &tui.Table{}}
 	cases := []struct {
 		lastTwoSelected   []int
 		newTwoSelected    []int
@@ -279,20 +279,27 @@ func TestUpdateIndexes(t *testing.T) {
 		{[]int{1, 2}, []int{2, 1}, 100, 99, 1},  // last two were: 1, 2 and goind to 1 again.
 	}
 	for _, c := range cases {
-		albumList.lastTwoSelected = c.lastTwoSelected
-		albumList.currDataIdx = c.currDataIdx
-		albumList.table.Select(c.selectedTableItem)
+		testPaginator.lastTwoSelected = c.lastTwoSelected
+		testPaginator.currDataIdx = c.currDataIdx
+		testPaginator.table.Select(c.selectedTableItem)
 
-		albumList.updateIndexes()
+		testPaginator.updateIndexes()
 
-		if albumList.currDataIdx != c.newDataIdx {
-			t.Fatalf("Expected new data index to be %d, have %d", c.newDataIdx, albumList.currDataIdx)
+		if testPaginator.currDataIdx != c.newDataIdx {
+			t.Fatalf("Expected new data index to be %d, have %d", c.newDataIdx, testPaginator.currDataIdx)
 		}
-		if !reflect.DeepEqual(albumList.lastTwoSelected, c.newTwoSelected) {
-			t.Fatalf("Expected new last two selected to be %#v, have %#v", c.newTwoSelected, albumList.lastTwoSelected)
+		if !reflect.DeepEqual(testPaginator.lastTwoSelected, c.newTwoSelected) {
+			t.Fatalf("Expected new last two selected to be %#v, have %#v", c.newTwoSelected, testPaginator.lastTwoSelected)
 		}
 	}
 }
+
+// func TestOnSelectionChange(t *testing.T) {
+// 	table := &tui.Table{}
+// 	albumList := &AlbumList{table: table}
+// 	callback := albumList.onSelectedChanged()
+// 	callback(table)
+// }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
 	text := "Some text"
@@ -318,5 +325,4 @@ func TestTrimCommasIfTooLong(t *testing.T) {
 			t.Fatalf("Expected result to be %s, but it was %s", c.expectedResult, result)
 		}
 	}
-
 }

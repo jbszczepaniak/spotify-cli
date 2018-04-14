@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	tui "github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
@@ -25,20 +26,28 @@ type dataFetcher interface {
 	fetchUserAlbums() ([]albumDescription, error)
 }
 
+type pagination interface {
+	nextPage() bool
+	previousPage() bool
+	updateIndexes()
+
+	getCurrDataIdx() int
+	setLastTwoSelected([]int)
+}
+
 // AlbumList represents list of albums with underlying data,
 // table to display, box in which table is places, indexes
 // pointing to currently playing item, and last chosen items.
 type AlbumList struct {
 	client             SpotifyClient
 	albumsDescriptions []albumDescription
-	currDataIdx        int
-	lastTwoSelected    []int
 	table              *tui.Table
 	box                *tui.Box
 
 	renderer
 	pageRenderer
 	dataFetcher
+	pagination
 }
 
 type albumDescription struct {
@@ -79,14 +88,13 @@ func newEmptyAlbumList(client SpotifyClient) *AlbumList {
 
 	return &AlbumList{
 		client:             client,
-		currDataIdx:        0,
-		lastTwoSelected:    []int{-1, -1},
 		table:              table,
 		box:                albumListBox,
 		albumsDescriptions: []albumDescription{},
 
 		dataFetcher:  &fetchUserAlbumsStruct{client: client},
 		pageRenderer: &renderPageStruct{table: table},
+		pagination:   &paginatorStruct{table: table, lastTwoSelected: []int{-1, -1}, currDataIdx: 0},
 	}
 }
 
@@ -139,59 +147,74 @@ func (fetchUserAlbumsStruct *fetchUserAlbumsStruct) fetchUserAlbums() ([]albumDe
 
 func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 	return func(t *tui.Table) {
-		if albumList.nextPage() {
-			err := albumList.renderPage(
+		if albumList.pagination.nextPage() {
+			err := albumList.pageRenderer.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums+visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
 			)
 			if err != nil {
 				panic(err)
 			}
-			albumList.lastTwoSelected = []int{-1, -1}
+			albumList.setLastTwoSelected([]int{-1, -1})
 			t.Select(1)
 			return
 		}
-		if albumList.previousPage() {
-			err := albumList.renderPage(
+		if albumList.pagination.previousPage() {
+			err := albumList.pageRenderer.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums-visibleAlbums,
-				(albumList.currDataIdx/visibleAlbums)*visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums-visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
 			)
 			if err != nil {
 				panic(err)
 			}
-			albumList.lastTwoSelected = []int{visibleAlbums + 2, visibleAlbums + 1}
+			albumList.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
 			t.Select(visibleAlbums)
 			return
 		}
-		albumList.updateIndexes()
+		albumList.pagination.updateIndexes()
 	}
 }
 
-func (albumList *AlbumList) nextPage() bool {
-	return albumList.lastTwoSelected[0] == visibleAlbums-1 && albumList.lastTwoSelected[1] == visibleAlbums
+type paginatorStruct struct {
+	currDataIdx     int
+	lastTwoSelected []int
+	table           *tui.Table
 }
 
-func (albumList *AlbumList) previousPage() bool {
-	return albumList.lastTwoSelected[1] == 1 && albumList.table.Selected() == 0 && albumList.currDataIdx >= visibleAlbums
+func (paginator *paginatorStruct) setLastTwoSelected(lastTwoSelected []int) {
+	paginator.lastTwoSelected = lastTwoSelected
 }
 
-func (albumList *AlbumList) updateIndexes() {
-	albumList.lastTwoSelected[0] = albumList.lastTwoSelected[1]
-	albumList.lastTwoSelected[1] = albumList.table.Selected()
+func (paginator *paginatorStruct) getCurrDataIdx() int {
+	return paginator.currDataIdx
+}
 
-	if albumList.lastTwoSelected[0] > albumList.lastTwoSelected[1] {
-		albumList.currDataIdx--
+func (paginator *paginatorStruct) nextPage() bool {
+	return paginator.lastTwoSelected[0] == visibleAlbums-1 && paginator.lastTwoSelected[1] == visibleAlbums
+}
+
+func (paginator *paginatorStruct) previousPage() bool {
+	return paginator.lastTwoSelected[1] == 1 && paginator.table.Selected() == 0 && paginator.currDataIdx >= visibleAlbums
+}
+
+func (paginator *paginatorStruct) updateIndexes() {
+	paginator.lastTwoSelected[0] = paginator.lastTwoSelected[1]
+	paginator.lastTwoSelected[1] = paginator.table.Selected()
+
+	if paginator.lastTwoSelected[0] > paginator.lastTwoSelected[1] {
+		paginator.currDataIdx--
 	}
-	if albumList.lastTwoSelected[0] < albumList.lastTwoSelected[1] {
-		albumList.currDataIdx++
+	if paginator.lastTwoSelected[0] < paginator.lastTwoSelected[1] {
+		paginator.currDataIdx++
 	}
 }
 
 func (albumList *AlbumList) onItemActivaed() func(*tui.Table) {
 	return func(t *tui.Table) {
-		albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &albumList.albumsDescriptions[albumList.currDataIdx-2].uri})
+		log.Printf("albumList: %#v", albumList)
+		albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &albumList.albumsDescriptions[albumList.pagination.getCurrDataIdx()-2].uri})
 	}
 }
 
