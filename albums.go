@@ -155,6 +155,7 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 			)
 			if err != nil {
 				log.Printf("Could not render next page of albums with %s", err)
+				return
 			}
 			albumList.pagination.setLastTwoSelected([]int{-1, -1})
 			t.Select(1)
@@ -168,6 +169,7 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 			)
 			if err != nil {
 				log.Printf("Could not render previous page of albums with %s", err)
+				return
 			}
 			albumList.pagination.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
 			t.Select(visibleAlbums)

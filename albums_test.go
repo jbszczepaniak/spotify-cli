@@ -338,21 +338,38 @@ func TestOnSelectionChangeUpdatesIndexesWhenNoPageChange(t *testing.T) {
 	}
 }
 
-func TestOnSelectionChangeWithNextPageWhenRenderPageErrorsThenAppPanics(t *testing.T) {
+func TestOnSelectionChangeError(t *testing.T) {
 	var str bytes.Buffer
 	log.SetOutput(&str)
 
-	fakeRenderer := &fakePageRenderer{ExecutionError: true}
-	fakePaginator := &fakePaginatorStruct{nextPageReturnValue: true, previousPageReturnValue: false}
-	albumList := &AlbumList{pagination: fakePaginator, pageRenderer: fakeRenderer}
-	callback := albumList.onSelectedChanged()
-	callback(&tui.Table{})
-
-	expectedLog := "Could not render next page of albums with error\n"
-	if !strings.HasSuffix(str.String(), expectedLog) {
-		t.Errorf("Expect log to have %s message, but log was %s", expectedLog, str.String())
+	cases := []struct {
+		fakePaginator pagination
+		expectedLog   string
+	}{
+		{
+			// Error when fetching next page
+			fakePaginator: &fakePaginatorStruct{nextPageReturnValue: true, previousPageReturnValue: false},
+			expectedLog:   "Could not render next page of albums with error\n",
+		},
+		{
+			// Error when fetching previous page
+			fakePaginator: &fakePaginatorStruct{nextPageReturnValue: false, previousPageReturnValue: true},
+			expectedLog:   "Could not render previous page of albums with error\n",
+		},
 	}
-	fmt.Println(str.String())
+
+	for _, c := range cases {
+		albumList := &AlbumList{
+			pagination:   c.fakePaginator,
+			pageRenderer: &fakePageRenderer{ExecutionError: true},
+		}
+		callback := albumList.onSelectedChanged()
+		callback(&tui.Table{})
+
+		if !strings.HasSuffix(str.String(), c.expectedLog) {
+			t.Errorf("Expect log to have %s message, but log was %s", c.expectedLog, str.String())
+		}
+	}
 }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
