@@ -154,7 +154,7 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
 			)
 			if err != nil {
-				panic(err)
+				log.Printf("Could not render next page of albums with %s", err)
 			}
 			albumList.pagination.setLastTwoSelected([]int{-1, -1})
 			t.Select(1)
@@ -167,7 +167,7 @@ func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
 			)
 			if err != nil {
-				panic(err)
+				log.Printf("Could not render previous page of albums with %s", err)
 			}
 			albumList.pagination.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
 			t.Select(visibleAlbums)

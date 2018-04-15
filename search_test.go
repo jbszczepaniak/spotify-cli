@@ -156,7 +156,7 @@ func TestOnItemActivatedCallback(t *testing.T) {
 		callback(results.getTable())
 
 		if !strings.HasSuffix(str.String(), c.expectedLogs) {
-			t.Errorf("Expect log to have suffix %s but log was %s", c.expectedLogs, str.String())
+			t.Errorf("Expect log to have %s message, but log was %s", c.expectedLogs, str.String())
 		}
 
 		if fakePlayer.calls != c.expectedPlayOptNumCalls {

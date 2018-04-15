@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/marcusolsson/tui-go"
@@ -333,6 +336,23 @@ func TestOnSelectionChangeUpdatesIndexesWhenNoPageChange(t *testing.T) {
 	if fakePaginator.updateIndexesCalled == false {
 		t.Logf("Expected updateIndexes() to be called, but it did not")
 	}
+}
+
+func TestOnSelectionChangeWithNextPageWhenRenderPageErrorsThenAppPanics(t *testing.T) {
+	var str bytes.Buffer
+	log.SetOutput(&str)
+
+	fakeRenderer := &fakePageRenderer{ExecutionError: true}
+	fakePaginator := &fakePaginatorStruct{nextPageReturnValue: true, previousPageReturnValue: false}
+	albumList := &AlbumList{pagination: fakePaginator, pageRenderer: fakeRenderer}
+	callback := albumList.onSelectedChanged()
+	callback(&tui.Table{})
+
+	expectedLog := "Could not render next page of albums with error\n"
+	if !strings.HasSuffix(str.String(), expectedLog) {
+		t.Errorf("Expect log to have %s message, but log was %s", expectedLog, str.String())
+	}
+	fmt.Println(str.String())
 }
 
 func TestTrimCommasIfTooLong(t *testing.T) {
