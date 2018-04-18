@@ -397,6 +397,43 @@ func TestOnSelectionChangeSuccess(t *testing.T) {
 	}
 }
 
+func TestAlbumsOnItemActivatedCallback(t *testing.T) {
+	var str bytes.Buffer
+	log.SetOutput(&str)
+
+	client := &DebugClient{}
+	albumList := &AlbumList{
+		client:             client,
+		pagination:         &fakePaginatorStruct{currDataIdx: 2},
+		albumsDescriptions: []albumDescription{{uri: "any"}, {uri: "any"}, {uri: "any"}},
+	}
+	callback := albumList.onItemActivaed()
+
+	cases := []struct {
+		playOptError bool
+		expectedLog  string
+	}{
+		{
+			playOptError: true,
+			expectedLog:  "Error occured while trying to play track with uri: any\n",
+		},
+		{
+			playOptError: false,
+			expectedLog:  "",
+		},
+	}
+	for _, c := range cases {
+		fakePlayer := &FakePlayer{playOptErrCallWithContext: c.playOptError}
+		client.player = fakePlayer
+		callback(&tui.Table{})
+		if fakePlayer.playOptCalls != 1 {
+			t.Fatalf("Expected PlayOpt() on spotify client to be called once but it was called  %d times", fakePlayer.playOptCalls)
+		}
+		if !strings.HasSuffix(str.String(), c.expectedLog) {
+			t.Errorf("Expect log to have '%s' message, but log was '%s;", c.expectedLog, str.String())
+		}
+	}
+}
 func TestTrimCommasIfTooLong(t *testing.T) {
 	text := "Some text"
 	cases := []struct {

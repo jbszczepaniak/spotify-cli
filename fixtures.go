@@ -24,7 +24,8 @@ type DebugClient struct {
 	userAlbumFetcher
 }
 
-type DebugPlayer struct{}
+type DebugPlayer struct {
+}
 
 // Play is a dummy implementation used when running in debug mode
 func (dp DebugPlayer) Play() error {

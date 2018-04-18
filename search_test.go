@@ -84,13 +84,14 @@ func TestSearchInputOnSubmit(t *testing.T) {
 }
 
 type FakePlayer struct {
-	calls                     int
+	playOptCalls              int
+	playCalls                 int
 	playOptErrCallWithURI     bool
 	playOptErrCallWithContext bool
 }
 
 func (fp *FakePlayer) PlayOpt(opt *spotify.PlayOptions) error {
-	fp.calls++
+	fp.playOptCalls++
 
 	if fp.playOptErrCallWithContext && opt.PlaybackContext != nil {
 		return fmt.Errorf("")
@@ -159,8 +160,8 @@ func TestOnItemActivatedCallback(t *testing.T) {
 			t.Errorf("Expect log to have %s message, but log was %s", c.expectedLogs, str.String())
 		}
 
-		if fakePlayer.calls != c.expectedPlayOptNumCalls {
-			t.Errorf("Should be called %d times, but was called %d times", c.expectedPlayOptNumCalls, fakePlayer.calls)
+		if fakePlayer.playOptCalls != c.expectedPlayOptNumCalls {
+			t.Errorf("Should be called %d times, but was called %d times", c.expectedPlayOptNumCalls, fakePlayer.playOptCalls)
 		}
 	}
 }

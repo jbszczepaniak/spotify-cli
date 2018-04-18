@@ -215,8 +215,12 @@ func (paginator *paginatorStruct) updateIndexes() {
 
 func (albumList *AlbumList) onItemActivaed() func(*tui.Table) {
 	return func(t *tui.Table) {
-		log.Printf("albumList: %#v", albumList)
-		albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: &albumList.albumsDescriptions[albumList.pagination.getCurrDataIdx()-2].uri})
+		// -2 because tui.Table starts counting at 1, and additional 1 is added because first row is a header
+		uri := &albumList.albumsDescriptions[albumList.pagination.getCurrDataIdx()-2].uri
+		err := albumList.client.PlayOpt(&spotify.PlayOptions{PlaybackContext: uri})
+		if err != nil {
+			log.Printf("Error occured while trying to play track with uri: %s", *uri)
+		}
 	}
 }
 
