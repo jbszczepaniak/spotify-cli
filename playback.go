@@ -67,7 +67,7 @@ func updateCurrentlyPlayingLabel(client SpotifyClient, label *tui.Label) {
 	currentlyPlaying, err := client.PlayerCurrentlyPlaying()
 	var currentSongName string
 	if err != nil {
-		log.Printf("could not currently playing track - fallback to None, %s", err)
+		log.Printf("could not fetch currently playing track - fallback to None, %s", err)
 		currentSongName = "None"
 	} else {
 		currentSongName = getTrackRepr(currentlyPlaying.Item)
@@ -142,7 +142,6 @@ func createAvailableDevicesTable(state appState, client SpotifyClient) (*devices
 		tui.NewLabel("Type"),
 	)
 	for i, device := range avalaibleDevices {
-		log.Println(device)
 		table.AppendRow(
 			tui.NewLabel(device.Name),
 			tui.NewLabel(device.Type),
