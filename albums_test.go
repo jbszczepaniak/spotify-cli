@@ -303,17 +303,12 @@ func TestUpdateIndexes(t *testing.T) {
 	}
 }
 
-// nextPage + render error -> panic
-// nextPage + render not error -> what parameters called with + test Last Two Selected changed
-// previousPage + render error -> panic
-// previousPage + render not error -> what parameters called with + test Last Two Selected changed
-// ani previous ani next -> indexy są aktualizowane
-
 type fakePaginatorStruct struct {
-	nextPageReturnValue     bool
-	previousPageReturnValue bool
-	currDataIdx             int
-	updateIndexesCalled     bool
+	nextPageReturnValue      bool
+	previousPageReturnValue  bool
+	currDataIdx              int
+	updateIndexesCalled      bool
+	lastTwoSelectedArguments interface{}
 }
 
 func (fake *fakePaginatorStruct) nextPage() bool {
@@ -324,9 +319,11 @@ func (fake *fakePaginatorStruct) previousPage() bool {
 	return fake.previousPageReturnValue
 }
 
-func (fake *fakePaginatorStruct) updateIndexes()           { fake.updateIndexesCalled = true }
-func (fake *fakePaginatorStruct) getCurrDataIdx() int      { return fake.currDataIdx }
-func (fake *fakePaginatorStruct) setLastTwoSelected([]int) {}
+func (fake *fakePaginatorStruct) updateIndexes()      { fake.updateIndexesCalled = true }
+func (fake *fakePaginatorStruct) getCurrDataIdx() int { return fake.currDataIdx }
+func (fake *fakePaginatorStruct) setLastTwoSelected(lastTwo []int) {
+	fake.lastTwoSelectedArguments = lastTwo
+}
 
 func TestOnSelectionChangeUpdatesIndexesWhenNoPageChange(t *testing.T) {
 	fakePaginator := &fakePaginatorStruct{nextPageReturnValue: false, previousPageReturnValue: false}
@@ -368,6 +365,34 @@ func TestOnSelectionChangeError(t *testing.T) {
 
 		if !strings.HasSuffix(str.String(), c.expectedLog) {
 			t.Errorf("Expect log to have %s message, but log was %s", c.expectedLog, str.String())
+		}
+		// Should also test, that item on table is selected
+	}
+}
+
+func TestOnSelectionChangeSuccess(t *testing.T) {
+	cases := []struct {
+		fakePaginator                     *fakePaginatorStruct
+		expectedSetLastTwoSelectedIndexes []int
+	}{
+		{
+			fakePaginator:                     &fakePaginatorStruct{nextPageReturnValue: true, previousPageReturnValue: false},
+			expectedSetLastTwoSelectedIndexes: []int{-1, -1},
+		},
+		{
+			fakePaginator:                     &fakePaginatorStruct{nextPageReturnValue: false, previousPageReturnValue: true},
+			expectedSetLastTwoSelectedIndexes: []int{47, 46},
+		},
+	}
+	for _, c := range cases {
+		albumList := &AlbumList{
+			pagination:   c.fakePaginator,
+			pageRenderer: &fakePageRenderer{},
+		}
+		callback := albumList.onSelectedChanged()
+		callback(&tui.Table{})
+		if !reflect.DeepEqual(c.fakePaginator.lastTwoSelectedArguments, c.expectedSetLastTwoSelectedIndexes) {
+			t.Fatalf("Expected argument of SetLastTwoSelcted() to be %v, but it was %v", c.expectedSetLastTwoSelectedIndexes, c.fakePaginator.lastTwoSelectedArguments)
 		}
 	}
 }

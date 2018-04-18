@@ -147,35 +147,35 @@ func (fetchUserAlbumsStruct *fetchUserAlbumsStruct) fetchUserAlbums() ([]albumDe
 
 func (albumList *AlbumList) onSelectedChanged() func(*tui.Table) {
 	return func(t *tui.Table) {
-		if albumList.pagination.nextPage() {
-			err := albumList.pageRenderer.renderPage(
+		if albumList.nextPage() {
+			err := albumList.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
-				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums+visibleAlbums,
 			)
 			if err != nil {
 				log.Printf("Could not render next page of albums with %s", err)
 				return
 			}
-			albumList.pagination.setLastTwoSelected([]int{-1, -1})
+			albumList.setLastTwoSelected([]int{-1, -1})
 			t.Select(1)
 			return
 		}
-		if albumList.pagination.previousPage() {
-			err := albumList.pageRenderer.renderPage(
+		if albumList.previousPage() {
+			err := albumList.renderPage(
 				albumList.albumsDescriptions,
-				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums-visibleAlbums,
-				(albumList.pagination.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums-visibleAlbums,
+				(albumList.getCurrDataIdx()/visibleAlbums)*visibleAlbums,
 			)
 			if err != nil {
 				log.Printf("Could not render previous page of albums with %s", err)
 				return
 			}
-			albumList.pagination.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
+			albumList.setLastTwoSelected([]int{visibleAlbums + 2, visibleAlbums + 1})
 			t.Select(visibleAlbums)
 			return
 		}
-		albumList.pagination.updateIndexes()
+		albumList.updateIndexes()
 	}
 }
 
