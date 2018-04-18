@@ -44,3 +44,7 @@ go test -v
 * [tui](https://github.com/marcusolsson/tui-go) - Terminal User Interface framework
 * [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper
 * [dep](https://github.com/golang/dep) - Go dependency management tool 
+
+## TODO 
+* Unit test playback.go
+* Unit test main.go
