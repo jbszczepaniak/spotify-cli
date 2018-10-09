@@ -9,6 +9,8 @@ archive:
     linux: Linux
     386: i386
     amd64: x86_64
+  files:
+    - index_tmpl.html
 checksum:
   name_template: 'checksums.txt'
 changelog:
