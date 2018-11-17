@@ -12,37 +12,47 @@ Spotify Client which runs in the terminal.
 ### Prerequisites
 1. Linux/MacOS operating system
 2. Google Chrome browser installed
-3. Go language installed 
 4. Premium Spotify Account
 5. Created Spotify Application under https://beta.developer.spotify.com/dashboard/applications (set redirect URI to http://localhost:8888/spotify-cli)
 
-### Installing
-1. Go to https://beta.developer.spotify.com/dashboard/applications, find created earlier Spotify Application, find Client ID and Client Secret, and put them in environment variables
+Go to https://beta.developer.spotify.com/dashboard/applications, find created earlier Spotify Application, find Client ID and Client Secret, and put them in environment variables
 ```
 export SPOTIFY_CLIENT_ID=xxxxxxxxxxxxx
 export SPOTIFY_SECRET=yyyyyyyyyyyyyyyy
 ```
 
-#### With `git clone` and `go build`
-2. Clone this repostitory
-```
-git clone https://github.com/jedruniu/spotify-cli.git
-``` 
-3. Build application
-```
-go build
-```
-4. Run application
-```
-./spotify-cli
-```
+### Running from release
 
-#### With downloading released package
-2. Go to https://github.com/jedruniu/spotify-cli/releases and download newest package release for your architecture
-3. Unpack downloaded package to some directory and cd to it. 
-4. Run application
+1. Download release for your OS/architecture under https://github.com/jedruniu/spotify-cli/releases
+2. Unpack it (i.e. with `tar -xvf spotify-cli_1.0.1_Darwin_x86_64.tar spotify`)
+3. Run it (`./spotify-cli`)
+
+### Building from sources
+
+#### Additional prerequisities
+1. Go language installed 
+
+#### Steps
+
+1. Get repository
 ```
-./spotify-cli
+go get github.com/jedruniu/spotify-cli
+```
+2. Go to directory with spotify-cli
+```
+cd $GOPATH/src/github.com/jedruniu/spotify-cli
+```
+3. Run dep
+```
+dep ensure
+```
+4. Install application
+```
+go install
+```
+5. Run application
+```
+spotify-cli
 ```
 
 ## Running tests
@@ -53,5 +63,8 @@ go test -v
 ## Built With
 * [tui](https://github.com/marcusolsson/tui-go) - Terminal User Interface framework
 * [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper
-* [dep](https://github.com/golang/dep) - Go dependency management tool
-* [goreleaser](https://goreleaser.com) - Releasing tool for go
+* [dep](https://github.com/golang/dep) - Go dependency management tool 
+
+## TODO 
+* Unit test playback.go
+* Unit test main.go
