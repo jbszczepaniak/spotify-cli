@@ -49,7 +49,7 @@ func TestAuthenticateClient(t *testing.T) {
 			testState.client <- &spotify.Client{}
 		}()
 
-		_, err := authenticate(testState)
+		_, err := startRemoteAuthentication(testState)
 		if err == nil && c.expectedErr {
 			t.Error("Error expected, but there was not one")
 		}

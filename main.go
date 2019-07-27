@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net/http"
 	"os"
 
 	"time"
@@ -64,6 +65,7 @@ func main() {
 	checkMode()
 
 	var client SpotifyClient
+
 	as := appState{
 		client:            make(chan *spotify.Client),
 		playerShutdown:    make(chan bool),
@@ -79,11 +81,24 @@ func main() {
 		}()
 	} else {
 		var err error
-		client, err = authenticate(as)
+
+		h := http.NewServeMux()
+		h.HandleFunc("/ws", as.handleWebSocket)
+		h.HandleFunc("/spotify-cli", as.authCallback)
+
+		go func() {
+			log.Fatal(http.ListenAndServe(":8888", h))
+		}()
+
+		err = startRemoteAuthentication(as.state)
 		if err != nil {
-			panic("Could not get client, shutting down.")
+			log.Printf("could not get client, shutting down, err: %v", err)
 		}
 	}
+
+	// wait for authentication to complete
+	client = <- as.client
+
 
 	sidebar, _ := NewSideBar(client)
 	search := NewSearch(client)

@@ -58,26 +58,40 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 }
 
 type appState struct {
+	// client is created as the result of Spotify backend calling auth callback,
+	// as soon as spotify client is created, the rest of the application can use
+	// is to call any spotify apis.
 	client            chan *spotify.Client
+
+	// signal sent by the application to the websocket handler that triggers tear down
+	// of websocket.
 	playerShutdown    chan bool
+
+	// as soon as web player is ready it sends player device id as the very first
+	// message on the websocket connection. Application may want to use this ID in
+	// order to control on which player to play music (the one that it created, or
+	// maybe on the other device that is also working)
 	playerDeviceID    chan spotify.ID
-	playerStateChange chan *WebPlaybackState // currently playing
+
+	// each time web player changes it's state it sens information about what is
+	// currently played on the websocket
+	playerStateChange chan *WebPlaybackState
+
+	// State is random string used in order to authenticate client. It is used to
+	// generate spotify backend URL to which user will be redirected. After user
+	// comes back to the application (to the auth callback) it is used to verify
+	// message received from the spotify backend.
 	state             string
 }
 
-// authenticate authenticate user with Sotify API
-func authenticate(as appState) (SpotifyClient, error) {
-	h := http.NewServeMux()
-	h.HandleFunc("/ws", as.handleWebSocket)
-	h.HandleFunc("/spotify-cli", as.authCallback)
-	go http.ListenAndServe(":8888", h)
-
-	url := auth.AuthURL(as.state)
-	err := openBrowserWith(url)
+// startRemoteAuthentication redirects to spotify's API in order to authenticate user
+func startRemoteAuthentication(state string) error {
+	authUrl := auth.AuthURL(state)
+	err := openBrowserWith(authUrl)
 	if err != nil {
-		return nil, fmt.Errorf("Could not open browser")
+		return fmt.Errorf("could not open browser with url: %s, err: %v", authUrl, err)
 	}
-	return <-as.client, err
+	return nil
 }
 
 // authCallback is a function to by Spotify upon successful
