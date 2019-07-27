@@ -65,8 +65,9 @@ func main() {
 	checkMode()
 
 	var client SpotifyClient
+	var webPlayerID spotify.ID
 
-	as := appState{
+	server := server{
 		client:            make(chan *spotify.Client),
 		playerShutdown:    make(chan bool),
 		playerDeviceID:    make(chan spotify.ID),
@@ -77,32 +78,34 @@ func main() {
 	if debugMode {
 		client = NewDebugClient()
 		go func() {
-			as.playerDeviceID <- "debug"
+			server.playerDeviceID <- "debug"
 		}()
 	} else {
 		var err error
 
 		h := http.NewServeMux()
-		h.HandleFunc("/ws", as.handleWebSocket)
-		h.HandleFunc("/spotify-cli", as.authCallback)
+		h.HandleFunc("/ws", server.handleWebSocket)
+		h.HandleFunc("/spotify-cli", server.authCallback)
 
 		go func() {
 			log.Fatal(http.ListenAndServe(":8888", h))
 		}()
 
-		err = startRemoteAuthentication(as.state)
+		err = startRemoteAuthentication(server.state)
 		if err != nil {
 			log.Printf("could not get client, shutting down, err: %v", err)
 		}
 	}
 
 	// wait for authentication to complete
-	client = <- as.client
+	client = <- server.client
 
+	// wait for device to be ready
+	webPlayerID = <- server.playerDeviceID
 
 	sidebar, _ := NewSideBar(client)
 	search := NewSearch(client)
-	playback := NewPlayback(client, as)
+	playback := NewPlayback(client, server.playerStateChange, webPlayerID)
 
 	mainFrame := tui.NewVBox(
 		search.box,
@@ -135,7 +138,7 @@ func main() {
 
 	ui.SetKeybinding("Esc", func() {
 		ui.Quit()
-		as.playerShutdown <- true
+		server.playerShutdown <- true
 		return
 	})
 

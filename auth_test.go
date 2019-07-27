@@ -40,7 +40,7 @@ func TestAuthenticateClient(t *testing.T) {
 			return nil
 		}
 		defer func() { openBrowserWith = openBrowserWithImpl }()
-		testState := appState{
+		testState := server{
 			client:         make(chan *spotify.Client),
 			playerShutdown: make(chan bool),
 			playerDeviceID: make(chan spotify.ID),
@@ -159,7 +159,7 @@ func TestAuthCallback(t *testing.T) {
 		}
 		auth = c.f
 		r := httptest.NewRecorder()
-		as := appState{client: make(chan *spotify.Client)}
+		as := server{client: make(chan *spotify.Client)}
 		go func() {
 			<-as.client
 		}()
@@ -216,7 +216,7 @@ func TestOpenBrowser(t *testing.T) {
 }
 
 func TestWebSocketHandler(t *testing.T) {
-	as := appState{
+	as := server{
 		client:         make(chan *spotify.Client),
 		playerShutdown: make(chan bool),
 		playerDeviceID: make(chan spotify.ID),

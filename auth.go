@@ -57,7 +57,7 @@ func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
 	return auth
 }
 
-type appState struct {
+type server struct {
 	// client is created as the result of Spotify backend calling auth callback,
 	// as soon as spotify client is created, the rest of the application can use
 	// is to call any spotify apis.
@@ -96,7 +96,7 @@ func startRemoteAuthentication(state string) error {
 
 // authCallback is a function to by Spotify upon successful
 // user login at their site
-func (s *appState) authCallback(w http.ResponseWriter, r *http.Request) {
+func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := auth.Token(s.state, r)
 	if err != nil {
 		errMsg := fmt.Sprintf("Could not get token, error: %v", err)
@@ -137,7 +137,7 @@ type WebPlaybackState struct {
 	CurrentArtistName string
 }
 
-func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

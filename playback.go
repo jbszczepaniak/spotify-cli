@@ -29,12 +29,12 @@ type playback struct {
 	box      *tui.Box
 }
 
-// NewPlayback creates data structure represnting current spotify playback.
-func NewPlayback(client SpotifyClient, as appState) currentlyPlaying {
+// NewPlayback creates data structure representing current spotify playback.
+func NewPlayback(client SpotifyClient, playerStateChanges chan *WebPlaybackState, webPlayerID spotify.ID) currentlyPlaying {
 	currentlyPlayingLabel := tui.NewLabel("")
 	go func() {
 		for {
-			currentState := <-as.playerStateChange
+			currentState := <-playerStateChanges
 			labelText := fmt.Sprintf(
 				"%s\n%s\n%s",
 				currentState.CurrentTrackName,
@@ -46,7 +46,10 @@ func NewPlayback(client SpotifyClient, as appState) currentlyPlaying {
 	}()
 
 	updateCurrentlyPlayingLabel(client, currentlyPlayingLabel)
-	availableDevicesTable, err := createAvailableDevicesTable(as, client)
+
+	// TODO handle error
+	_ = transferPlaybackToDevice(client, webPlayerID)
+	availableDevicesTable, err := createAvailableDevicesTable(client, webPlayerID)
 	if err != nil {
 		log.Fatalf("err occured: %v", err)
 	}
@@ -121,13 +124,7 @@ func createPlaybackButtons(client SpotifyClient, currentlyPlayingLabel *tui.Labe
 	}
 }
 
-func createAvailableDevicesTable(state appState, client SpotifyClient) (*devicesTable, error) {
-	SDKplayerID := <-state.playerDeviceID
-	err := transferPlaybackToDevice(client, SDKplayerID)
-	if err != nil {
-		return nil, fmt.Errorf("could not transfer playback to device %s, err: %v", SDKplayerID, err)
-	}
-
+func createAvailableDevicesTable(client SpotifyClient, webPlayerID spotify.ID) (*devicesTable, error) {
 	table := tui.NewTable(0, 0)
 	tableBox := tui.NewHBox(table)
 	tableBox.SetTitle("Devices")
@@ -146,7 +143,10 @@ func createAvailableDevicesTable(state appState, client SpotifyClient) (*devices
 			tui.NewLabel(device.Name),
 			tui.NewLabel(device.Type),
 		)
-		if device.ID == SDKplayerID {
+		// we forced our web player to be the active one, but spotify backend
+		// has delays thus, instead of highlighting active device (which might be
+		// out of date), we highlight just our web player.
+		if device.ID == webPlayerID {
 			table.SetSelected(i + 1)
 		}
 	}
