@@ -137,18 +137,21 @@ func (s *appState) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		for range time.Tick(500 * time.Millisecond) {
-			var y WebPlaybackState
+			var state WebPlaybackState
 			_, message, err = conn.ReadMessage()
-			err = json.Unmarshal(message, &y)
+			err = json.Unmarshal(message, &state)
 			if err != nil {
-				log.Printf("Could not Unmarshall message: %s, err: %s", message, err)
+				log.Printf("could not Unmarshall message: %s, err: %s", message, err)
 			}
-			s.playerStateChange <- &y
+			s.playerStateChange <- &state
 		}
 	}()
 
 	<-s.playerShutdown
-	conn.WriteJSON("{\"close\": true}")
+	err = conn.WriteJSON("{\"close\": true}")
+	if err != nil {
+		log.Printf("could not close connection, err %v", err)
+	}
 
 }
 
