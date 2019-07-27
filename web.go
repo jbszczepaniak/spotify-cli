@@ -20,15 +20,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var auth = getSpotifyAuthenticator()
-
 type spotifyAuthenticatorInterface interface {
 	AuthURL(string) string
 	Token(string, *http.Request) (*oauth2.Token, error)
 	NewClient(*oauth2.Token) spotify.Client
 }
 
-func getSpotifyAuthenticator() spotifyAuthenticatorInterface {
+func NewSpotifyAuthenticator() spotifyAuthenticatorInterface {
 	envKeys := []string{"SPOTIFY_CLIENT_ID", "SPOTIFY_SECRET"}
 	envVars := map[string]string{}
 	for _, key := range envKeys {
@@ -82,11 +80,15 @@ type server struct {
 	// comes back to the application (to the auth callback) it is used to verify
 	// message received from the spotify backend.
 	state             string
+
+	// used by auth callback to verify message from spotify backend
+	// and to create a spotify client.
+	authenticator	spotifyAuthenticatorInterface
 }
 
 // startRemoteAuthentication redirects to spotify's API in order to authenticate user
-func startRemoteAuthentication(state string) error {
-	authUrl := auth.AuthURL(state)
+func startRemoteAuthentication(authenticator spotifyAuthenticatorInterface, state string) error {
+	authUrl := authenticator.AuthURL(state)
 	err := openBrowserWith(authUrl)
 	if err != nil {
 		return fmt.Errorf("could not open browser with url: %s, err: %v", authUrl, err)
@@ -97,7 +99,7 @@ func startRemoteAuthentication(state string) error {
 // authCallback is a function to by Spotify upon successful
 // user login at their site
 func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.Token(s.state, r)
+	token, err := s.authenticator.Token(s.state, r)
 	if err != nil {
 		errMsg := fmt.Sprintf("Could not get token, error: %v", err)
 		http.Error(w, errMsg, http.StatusNotFound)
@@ -105,7 +107,7 @@ func (s *server) authCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := auth.NewClient(token)
+	client := s.authenticator.NewClient(token)
 	s.client <- &client
 
 	t, _ := template.ParseFiles("index_tmpl.html")
@@ -146,7 +148,8 @@ func (s *server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	var v WebPlaybackReadyDevice
 	_, message, err := conn.ReadMessage()
-	err = json.Unmarshal(message, &v)
+	err = json.Unmarshal(message, &v) // TODO handle error
+	// This really means that the web player is ready
 	s.playerDeviceID <- spotify.ID(v.DeviceId)
 
 	go func() {

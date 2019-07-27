@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/marcusolsson/tui-go"
 	"github.com/zmb3/spotify"
-	"golang.org/x/oauth2"
 )
 
 type albumsList struct {
@@ -39,8 +38,6 @@ type SpotifyClient interface {
 	PlayerCurrentlyPlaying() (*spotify.CurrentlyPlaying, error)
 	PlayerDevices() ([]spotify.PlayerDevice, error)
 	TransferPlayback(spotify.ID, bool) error
-	CurrentUser() (*spotify.PrivateUser, error)
-	Token() (*oauth2.Token, error)
 }
 
 type player interface {
@@ -65,7 +62,7 @@ func main() {
 	checkMode()
 
 	var client SpotifyClient
-	var webPlayerID spotify.ID
+	var spotifyAuthenticator = NewSpotifyAuthenticator()
 
 	server := server{
 		client:            make(chan *spotify.Client),
@@ -73,6 +70,7 @@ func main() {
 		playerDeviceID:    make(chan spotify.ID),
 		state:             uuid.New().String(),
 		playerStateChange: make(chan *WebPlaybackState),
+		authenticator: spotifyAuthenticator,
 	}
 
 	if debugMode {
@@ -91,7 +89,7 @@ func main() {
 			log.Fatal(http.ListenAndServe(":8888", h))
 		}()
 
-		err = startRemoteAuthentication(server.state)
+		err = startRemoteAuthentication(spotifyAuthenticator, server.state)
 		if err != nil {
 			log.Printf("could not get client, shutting down, err: %v", err)
 		}
@@ -101,7 +99,7 @@ func main() {
 	client = <- server.client
 
 	// wait for device to be ready
-	webPlayerID = <- server.playerDeviceID
+	webPlayerID := <- server.playerDeviceID
 
 	sidebar, _ := NewSideBar(client)
 	search := NewSearch(client)
