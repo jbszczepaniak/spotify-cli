@@ -5,9 +5,18 @@
 
 Spotify Client which runs in the terminal.
 
-![screenshot](screen_shot.png)
+# How does it look like?
+![screenshot](img/screen_shot.png)
 
-## Getting Started
+# How does it work?
+
+## What are the components of spotify-cli?
+![screenshot](img/components.png)
+
+## How components talk with each other?
+![screenshot](img/workflow.png)
+
+# How to run it?
 
 ### Prerequisites
 1. Linux/MacOS operating system
@@ -42,15 +51,11 @@ go get github.com/jedruniu/spotify-cli
 ```
 cd $GOPATH/src/github.com/jedruniu/spotify-cli
 ```
-3. Run dep
-```
-dep ensure
-```
-4. Install application
+3. Install application
 ```
 go install
 ```
-5. Run application
+4. Run application
 ```
 spotify-cli
 ```
@@ -62,9 +67,4 @@ go test -v
 ```
 ## Built With
 * [tui](https://github.com/marcusolsson/tui-go) - Terminal User Interface framework
-* [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper
-* [dep](https://github.com/golang/dep) - Go dependency management tool 
-
-## TODO 
-* Unit test playback.go
-* Unit test main.go
+* [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper 
