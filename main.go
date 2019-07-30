@@ -5,6 +5,7 @@ import (
 	"github.com/jedruniu/spotify-cli/web"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"time"
@@ -54,6 +55,36 @@ type userAlbumFetcher interface {
 	CurrentUsersAlbumsOpt(opt *spotify.Options) (*spotify.SavedAlbumPage, error)
 }
 
+func NewSpotifyAuthenticator() spotify.Authenticator{
+	envKeys := []string{"SPOTIFY_CLIENT_ID", "SPOTIFY_SECRET"}
+	envVars := map[string]string{}
+	for _, key := range envKeys {
+		v := os.Getenv(key)
+		if v == "" {
+			log.Fatalf("Quiting, there is no %s environment variable.", key)
+		}
+		envVars[key] = v
+	}
+
+	redirectURI := url.URL{Scheme: "http", Host: "localhost:8888", Path: "/spotify-cli"}
+
+	auth := spotify.NewAuthenticator(
+		redirectURI.String(),
+		spotify.ScopeUserReadPrivate,
+		spotify.ScopeUserReadCurrentlyPlaying,
+		spotify.ScopeUserReadPlaybackState,
+		spotify.ScopeUserModifyPlaybackState,
+		spotify.ScopeUserLibraryRead,
+		// Used for Web Playback SDK
+		"streaming",
+		spotify.ScopeUserReadBirthdate,
+		spotify.ScopeUserReadEmail,
+	)
+	auth.SetAuthInfo(envVars["SPOTIFY_CLIENT_ID"], envVars["SPOTIFY_SECRET"])
+	return auth
+}
+
+
 func main() {
 	log.SetFlags(log.Llongfile)
 	f, _ := os.Create("log.txt")
@@ -63,15 +94,15 @@ func main() {
 	checkMode()
 
 	var client SpotifyClient
-	var spotifyAuthenticator = web.NewSpotifyAuthenticator()
+	var spotifyAuthenticator = NewSpotifyAuthenticator()
 
-	authHandler := web.AuthHandler{
+	authHandler := &web.AuthHandler{
 		Client:            make(chan *spotify.Client),
 		State:             uuid.New().String(),
 		Authenticator: spotifyAuthenticator,
 	}
 
-	webSocketHandler := web.WebsocketHandler{
+	webSocketHandler := &web.WebsocketHandler{
 		PlayerShutdown:    make(chan bool),
 		PlayerDeviceID:    make(chan spotify.ID),
 		PlayerStateChange: make(chan *web.WebPlaybackState),
@@ -86,9 +117,9 @@ func main() {
 		var err error
 
 		h := http.NewServeMux()
-		h.HandleFunc("/ws", webSocketHandler.Handle)
-		h.HandleFunc("/spotify-cli", authHandler.AuthCallback) // TODO: How to do Handler with pointer receiver?
-		h.HandleFunc("/player", web.PlayerHandle)
+		h.Handle("/ws", webSocketHandler)
+		h.Handle("/spotify-cli", authHandler)
+		h.HandleFunc("/player", web.PlayerHandleFunc)
 
 
 		go func() {

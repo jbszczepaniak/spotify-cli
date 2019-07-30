@@ -11,7 +11,7 @@ type tokenToInsert struct {
 	Token string
 }
 
-func PlayerHandle(w http.ResponseWriter, r *http.Request) {
+func PlayerHandleFunc(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		msg := fmt.Sprintf("token is not provided")

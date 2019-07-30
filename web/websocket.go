@@ -35,7 +35,7 @@ type WebPlaybackState struct {
 	CurrentArtistName string
 }
 
-func (s *WebsocketHandler) Handle(w http.ResponseWriter, r *http.Request) {
+func (s *WebsocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
