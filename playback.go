@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jedruniu/spotify-cli/web"
 	"log"
 	"time"
 
@@ -30,7 +31,7 @@ type playback struct {
 }
 
 // NewPlayback creates data structure representing current spotify playback.
-func NewPlayback(client SpotifyClient, playerStateChanges chan *WebPlaybackState, webPlayerID spotify.ID) currentlyPlaying {
+func NewPlayback(client SpotifyClient, playerStateChanges chan *web.WebPlaybackState, webPlayerID spotify.ID) currentlyPlaying {
 	currentlyPlayingLabel := tui.NewLabel("")
 	go func() {
 		for {

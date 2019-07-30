@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/jedruniu/spotify-cli/web"
 	"log"
 	"net/http"
 	"os"
@@ -54,7 +55,7 @@ type userAlbumFetcher interface {
 }
 
 func main() {
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(log.Llongfile)
 	f, _ := os.Create("log.txt")
 	defer f.Close()
 	log.SetOutput(f)
@@ -62,48 +63,53 @@ func main() {
 	checkMode()
 
 	var client SpotifyClient
-	var spotifyAuthenticator = NewSpotifyAuthenticator()
+	var spotifyAuthenticator = web.NewSpotifyAuthenticator()
 
-	server := server{
-		client:            make(chan *spotify.Client),
-		playerShutdown:    make(chan bool),
-		playerDeviceID:    make(chan spotify.ID),
-		state:             uuid.New().String(),
-		playerStateChange: make(chan *WebPlaybackState),
-		authenticator: spotifyAuthenticator,
+	authHandler := web.AuthHandler{
+		Client:            make(chan *spotify.Client),
+		State:             uuid.New().String(),
+		Authenticator: spotifyAuthenticator,
+	}
+
+	webSocketHandler := web.WebsocketHandler{
+		PlayerShutdown:    make(chan bool),
+		PlayerDeviceID:    make(chan spotify.ID),
+		PlayerStateChange: make(chan *web.WebPlaybackState),
 	}
 
 	if debugMode {
 		client = NewDebugClient()
 		go func() {
-			server.playerDeviceID <- "debug"
+			webSocketHandler.PlayerDeviceID <- "debug"
 		}()
 	} else {
 		var err error
 
 		h := http.NewServeMux()
-		h.HandleFunc("/ws", server.handleWebSocket)
-		h.HandleFunc("/spotify-cli", server.authCallback)
+		h.HandleFunc("/ws", webSocketHandler.Handle)
+		h.HandleFunc("/spotify-cli", authHandler.AuthCallback) // TODO: How to do Handler with pointer receiver?
+		h.HandleFunc("/player", web.PlayerHandle)
+
 
 		go func() {
 			log.Fatal(http.ListenAndServe(":8888", h))
 		}()
 
-		err = startRemoteAuthentication(spotifyAuthenticator, server.state)
+		err = startRemoteAuthentication(spotifyAuthenticator, authHandler.State)
 		if err != nil {
 			log.Printf("could not get client, shutting down, err: %v", err)
 		}
 	}
 
 	// wait for authentication to complete
-	client = <- server.client
+	client = <- authHandler.Client
 
 	// wait for device to be ready
-	webPlayerID := <- server.playerDeviceID
+	webPlayerID := <- webSocketHandler.PlayerDeviceID
 
 	sidebar, _ := NewSideBar(client)
 	search := NewSearch(client)
-	playback := NewPlayback(client, server.playerStateChange, webPlayerID)
+	playback := NewPlayback(client, webSocketHandler.PlayerStateChange, webPlayerID)
 
 	mainFrame := tui.NewVBox(
 		search.box,
@@ -136,7 +142,7 @@ func main() {
 
 	ui.SetKeybinding("Esc", func() {
 		ui.Quit()
-		server.playerShutdown <- true
+		webSocketHandler.PlayerShutdown <- true
 		return
 	})
 
