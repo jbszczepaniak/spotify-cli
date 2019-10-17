@@ -77,7 +77,6 @@ func NewSpotifyAuthenticator() spotify.Authenticator{
 		spotify.ScopeUserLibraryRead,
 		// Used for Web Playback SDK
 		"streaming",
-		spotify.ScopeUserReadBirthdate,
 		spotify.ScopeUserReadEmail,
 	)
 	auth.SetAuthInfo(envVars["SPOTIFY_CLIENT_ID"], envVars["SPOTIFY_SECRET"])
