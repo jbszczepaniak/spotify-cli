@@ -47,5 +47,6 @@ func (s *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	client := s.Authenticator.NewClient(token)
 	s.Client <- &client
 
+	// TODO parametrize port and host
 	http.Redirect(w, r, fmt.Sprintf("http://localhost:8888/player?token=%s", token.AccessToken), 301)
 }
