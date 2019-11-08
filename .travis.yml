@@ -7,11 +7,10 @@ env:
   global:
     - SPOTIFY_CLIENT_ID=any
     - SPOTIFY_SECRET=any
-    - GOMODULES111=on
 
 script:
-  - make install_deps
-  - make test
+  - env GO111MODULE=on make install_deps
+  - env GO111MODULE=on make test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
