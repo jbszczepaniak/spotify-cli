@@ -3,14 +3,17 @@
 builds:
 - env:
   - CGO_ENABLED=0
+  main: ./cmd/spotify-cli/main.go
+  binary: packr
+
 archive:
   replacements:
     darwin: Darwin
     linux: Linux
     386: i386
     amd64: x86_64
-  files:
-    - index_tmpl.html
+  # files:
+  #   - index_tmpl.html
 checksum:
   name_template: 'checksums.txt'
 changelog:
