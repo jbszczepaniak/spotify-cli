@@ -1,0 +1,1 @@
+/Users/jedrzejszczepaniak/Documents/projects/spotify-cli/pkg/web/websocket.go:56: web player is ready, it's ID is 1171e0e527b1301e703c5405f46149bd8f98e33d

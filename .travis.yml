@@ -9,7 +9,6 @@ env:
     - SPOTIFY_SECRET=any
 
 script:
-  - env GO111MODULE=on make install_deps
   - env GO111MODULE=on make test
 
 after_success:
