@@ -9,6 +9,7 @@ env:
     - SPOTIFY_SECRET=any
 
 script:
+  - make install_deps
   - make test
 
 after_success:
