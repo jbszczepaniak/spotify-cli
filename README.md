@@ -39,32 +39,26 @@ export SPOTIFY_SECRET=yyyyyyyyyyyyyyyy
 ### Building from sources
 
 #### Additional prerequisities
-1. Go language installed 
+1. Go language installed  (version 1.12 or higher)
 
 #### Steps
 
-1. Get repository
+1. Clone this repository outside your GOPATH, and cd into it.
+2. Build application
 ```
-go get github.com/jedruniu/spotify-cli
+make build
 ```
-2. Go to directory with spotify-cli
+3. Run application
 ```
-cd $GOPATH/src/github.com/jedruniu/spotify-cli
-```
-3. Install application
-```
-go install
-```
-4. Run application
-```
-spotify-cli
+./bin/spotify-cli
 ```
 
 ## Running tests
 
 ```
-go test -v
+make test
 ```
 ## Built With
 * [tui](https://github.com/marcusolsson/tui-go) - Terminal User Interface framework
 * [Spotify](https://github.com/zmb3/spotify) - Spotify Web API Wrapper 
+* [packr](https://github.com/gobuffalo/packr) - Embeding static files in binaries
