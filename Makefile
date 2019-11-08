@@ -17,4 +17,9 @@ clean:
 test:
 	go test -v ./...
 
+.PHONY: images
+images:
+	plantuml -tpng img/components.puml
+	plantuml -tpng img/workflow.puml
+
 .DEFAULT_GOAL := build
