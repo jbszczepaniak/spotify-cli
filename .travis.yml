@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - "1.10.1"
+  - "1.12"
 
 env:
   global:
@@ -9,8 +9,7 @@ env:
     - SPOTIFY_SECRET=any
 
 script:
-  - go build
-  - go test -v -race -coverprofile=coverage.txt -covermode=atomic
+  - make test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
