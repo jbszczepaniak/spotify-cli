@@ -4,7 +4,7 @@ builds:
 - env:
   - CGO_ENABLED=0
   main: ./cmd/spotify-cli/main.go
-  binary: packr
+  binary: spotify-cli
 
 archive:
   replacements:
@@ -12,8 +12,6 @@ archive:
     linux: Linux
     386: i386
     amd64: x86_64
-  # files:
-  #   - index_tmpl.html
 checksum:
   name_template: 'checksums.txt'
 changelog:
