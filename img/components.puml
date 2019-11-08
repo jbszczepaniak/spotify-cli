@@ -1,0 +1,19 @@
+@startuml
+
+skinparam component {
+    FontColor          black
+    AttributeFontColor black
+    FontSize           17
+    AttributeFontSize  15
+    AttributeFontname  Droid Sans Mono
+    BackgroundColor    #6A9EFF
+    BorderColor        black
+    ArrowColor         #222266
+}
+skinparam componentStyle uml2
+
+[Spotify Backend] ---> [Web Player] : updates
+[Web Player] ---> [Spotify CLI] : changes state
+[Spotify CLI] ---> [Spotify Backend] : API calls
+
+@enduml

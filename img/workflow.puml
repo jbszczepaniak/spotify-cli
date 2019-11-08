@@ -1,0 +1,52 @@
+@startuml
+
+' skin BlueModern
+
+' skinparam sequence transparent
+' skinparam useBetaStyle true
+' skinparam componentStyle uml2
+
+' skinparam monochrome reverse
+
+skinparam sequence {	
+	LifeLineBorderColor blue
+  ArrowColor #222266
+	
+	ParticipantBorderColor Black
+	ParticipantBackgroundColor #6A9EFF
+	ParticipantFontName Droid Sans Mono
+	ParticipantFontSize 17
+	ParticipantFontColor Black  
+	
+	ActorBackgroundColor aqua
+	ActorFontColor DeepSkyBlue
+	ActorFontSize 17
+	ActorFontName Droid Sans Mono
+}
+
+participant "Spotifly CLI" as C
+participant "Web Player" as W
+participant "Spotify Backend" as S
+
+activate C
+activate S
+C -> C: Create random state
+C -> S: Authenticate with state
+S -> C: Authentication successful, send back token
+C -> C: Initialize Spotify CLI with token
+C -> W: Create Web player with token
+activate W
+W -> C: Player ready (here is my device ID)
+C -> C: Save players device ID
+C -> S: Transfer playback to device with device ID
+C -> S: Change song to X
+W -> C: Player state change, now X is being played
+C -> C: Song ends
+W -> C: Player state change, noq Y started playing
+C -> C: User quits
+C -> W: Shutdown player
+deactivate W
+C -> C: Exit
+deactivate C
+deactivate S
+@enduml
