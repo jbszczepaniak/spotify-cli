@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spotify Web Playback SDK Quick Start Tutorial</title>
+</head>
+<body>
+  <h1>Spotify Player</h1>
+  <h2>Go to the terminal and please do not close this tab.</h2>
+
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <script type="text/javascript" charset="utf-8" async defer>
+    conn = new WebSocket("ws://" + document.location.host + "/ws");
+    conn.onmessage = function (evt) {
+      console.log(evt.data);
+      var parsed = JSON.parse(JSON.parse(evt.data));
+      if (parsed['close']) {
+        open(location, '_self').close();
+      }
+    }
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const token = {{.Token}};
+      const player = new Spotify.Player({
+        name: 'Browser playback',
+        getOAuthToken: cb => { cb(token); }
+      });
+
+      // Error handling
+      player.addListener('initialization_error', ({ message }) => { console.error(message); });
+      player.addListener('authentication_error', ({ message }) => { console.error(message); });
+      player.addListener('account_error', ({ message }) => { console.error(message); });
+      player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+      // Playback status updates
+      player.addListener('player_state_changed', state => {
+        stateUpdate = {};
+        const currentTrackName = state.track_window.current_track.name;
+        if (currentTrackName !== undefined) {
+          stateUpdate['CurrentTrackName'] = currentTrackName;
+        }
+        const currentAlbumName = state.track_window.current_track.album.name;
+        if (currentAlbumName !== undefined) {
+          stateUpdate['CurrentAlbumName'] = currentAlbumName;
+        }
+        const currentArtistName = state.track_window.current_track.artists[0].name;
+        if (currentArtistName !== undefined) {
+          stateUpdate['CurrentArtistName'] = currentArtistName;
+        }
+        conn.send(JSON.stringify(stateUpdate));
+        console.log(state);
+      });
+
+      // Ready
+      player.addListener('ready', ({ device_id }) => {
+        console.log("Device ready: ", device_id)
+        conn.send(JSON.stringify({"DeviceId": device_id}))
+      });
+
+      // Connect to the player!
+      player.connect();
+    };    
+  </script>
+</body>
+</html>
