@@ -7,7 +7,7 @@ install_deps:
 .PHONY: build
 build: install_deps
 	mkdir -p $(BINDIR)
-	go build -o $(BINDIR)/spotify-cli ./cmd/spotify-cli
+	packr -o $(BINDIR)/spotify-cli ./cmd/spotify-cli
 
 .PHONY: clean
 clean:

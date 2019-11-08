@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/gobuffalo/packr"
 )
 
 type tokenToInsert struct {
@@ -20,7 +22,9 @@ func PlayerHandleFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedTemplate, err := template.ParseFiles("index_tmpl.html")
+	box := packr.NewBox("../../assets")
+
+	parsedTemplate, err := template.New("index").Parse(box.String("index_tmpl.html"))
 	if err != nil {
 		msg := fmt.Sprintf("could not parse template, error: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)

@@ -15,7 +15,7 @@ require (
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/gdamore/encoding v0.0.0-20151215212835-b23993cbb635 // indirect
 	github.com/gdamore/tcell v1.0.0 // indirect
-	github.com/gobuffalo/packr v1.30.1 // indirect
+	github.com/gobuffalo/packr v1.30.1
 	github.com/gobuffalo/packr/v2 v2.7.1 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
