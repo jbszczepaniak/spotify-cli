@@ -1,1 +1,0 @@
-/Users/jedrzej.szczepaniak/code/spotify-cli/cmd/spotify-cli/main.go:40: Quiting, there is no SPOTIFY_CLIENT_ID environment variable.
