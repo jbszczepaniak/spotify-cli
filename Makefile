@@ -3,6 +3,7 @@ BINDIR := $(shell pwd)/bin
 .PHONY: install_deps
 install_deps:
 	go mod download
+	go get -u github.com/gobuffalo/packr/packr
 
 .PHONY: build
 build: install_deps
