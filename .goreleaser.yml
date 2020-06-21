@@ -1,7 +1,8 @@
 before:
   hooks:
-    # You may remove this if you don't use go modules.
-    - go mod download
+    - make install_deps
+    - make packr
+  
 builds:
 - env:
   - CGO_ENABLED=0
