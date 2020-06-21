@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -62,7 +63,7 @@ func main() {
 	log.SetFlags(log.Llongfile)
 	f, _ := os.Create("log.txt")
 	defer f.Close()
-	log.SetOutput(f)
+	log.SetOutput(io.MultiWriter(f, os.Stdout))
 
 	checkMode()
 
