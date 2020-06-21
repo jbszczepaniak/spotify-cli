@@ -1,1 +1,0 @@
-/Users/jedrzejszczepaniak/Documents/projects/spotify-cli/pkg/web/player.go:27: could not parse template, error: open index_tmpl.html: no such file or directory
